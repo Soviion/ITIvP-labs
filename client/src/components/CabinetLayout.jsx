@@ -2,8 +2,8 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../auth/context';
 
 const TABS = [
-  { to: 'card', label: 'Медицинская карта', patientOnly: true },
   { to: 'tickets', label: 'Мои талоны', patientOnly: true },
+  { to: 'card', label: 'Медицинская карта', patientOnly: true },
   { to: 'history', label: 'История болезни', patientOnly: true },
   { to: 'settings', label: 'Настройки' },
 ];

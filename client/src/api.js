@@ -1,4 +1,6 @@
 import axios from 'axios';
+import { connection } from './connection';
+import { humanizeError, humanizeFieldMessage } from './errors';
 import { fromApiAppointment, toApiAppointment, toApiPatient } from './utils/appointments';
 import { apiToIsoDate, isoToApiDate } from './utils/dates';
 import { fromApiMe, toApiProfile } from './utils/patient';
@@ -6,32 +8,36 @@ import { fromApiMe, toApiProfile } from './utils/patient';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 // Искусственная задержка для демонстрации спиннера и оптимистичного UI (VITE_API_DELAY_MS в .env)
 const FAKE_DELAY_MS = Number(import.meta.env.VITE_API_DELAY_MS) || 0;
-const TOKEN_KEY = 'clinic.token';
+// Два независимых входа: сайт пациентов («Твой талон») и кабинет врача («Моя клиника»). У каждого свой токен и своя сессия:
+// вход на одном сайте не открывает другой.
+const TOKEN_KEYS = { site: 'clinic.site.token', doctor: 'clinic.doctor.token' };
+// какому входу принадлежит запрос, определяется страницей, с которой он сделан
+export const portalOf = (pathname = window.location.pathname) => (pathname === '/doctor' || pathname.startsWith('/doctor/') ? 'doctor' : 'site');
 
 // Повтор запроса при ошибке: всего до 3 попыток, пауза растёт: 1 с, 2 с
 export const RETRY = { attempts: 3, baseDelayMs: 1000 };
 
 
-let memoryToken = null; 
+const memoryTokens = { site: null, doctor: null };
 
 export const tokenStorage = {
-  get() {
+  get(portal = portalOf()) {
     try {
-      return localStorage.getItem(TOKEN_KEY) ?? memoryToken;
+      return localStorage.getItem(TOKEN_KEYS[portal]) ?? memoryTokens[portal];
     } catch {
-      return memoryToken;
+      return memoryTokens[portal];
     }
   },
-  set(token) {
-    memoryToken = token;
+  set(token, portal = portalOf()) {
+    memoryTokens[portal] = token;
     try {
-      localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem(TOKEN_KEYS[portal], token);
     } catch { /* без localStorage токен живёт до перезагрузки страницы */ }
   },
-  clear() {
-    memoryToken = null;
+  clear(portal = portalOf()) {
+    memoryTokens[portal] = null;
     try {
-      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(TOKEN_KEYS[portal]);
     } catch { /* ничего не делаем */ }
   },
 };
@@ -61,7 +67,8 @@ const sleep = (ms, signal) => new Promise((resolve, reject) => {
 api.interceptors.request.use(async (config) => {
   if (FAKE_DELAY_MS) await sleep(FAKE_DELAY_MS, config.signal);
 
-  const token = tokenStorage.get();
+  config.portal = config.portal ?? portalOf();
+  const token = tokenStorage.get(config.portal);
   if (token && !config.skipAuth) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -107,6 +114,7 @@ export function onUnauthorized(listener) {
 api.interceptors.response.use(
   (response) => {
     clearRetry(response.config);
+    connection.reportOk(); // сервер ответил: связь есть
     return response;
   },
   async (error) => {
@@ -138,9 +146,15 @@ api.interceptors.response.use(
 
     clearRetry(config);
 
+    // Сервер не ответил совсем (не таймаут, не отмена запроса): показываем окно «Нет связи с сервером».
+    // Любой ответ сервера, даже с ошибкой, означает, что связь есть.
+    if (error.response) connection.reportOk();
+    else if (!axios.isCancel(error) && error.code !== 'ECONNABORTED' && error.code !== 'ETIMEDOUT') connection.reportLost(config?.method?.toLowerCase() === 'get');
+
     if (error.response?.status === 401 && config?.headers?.Authorization) {
-      tokenStorage.clear();
-      unauthorizedListeners.forEach((listener) => listener());
+      const portal = config.portal ?? portalOf();
+      tokenStorage.clear(portal);
+      unauthorizedListeners.forEach((listener) => listener(portal)); // выходит только тот вход, чей токен отклонён
     }
     return Promise.reject(error);
   },
@@ -150,27 +164,18 @@ api.interceptors.response.use(
 export const isCanceled = (error) => axios.isCancel(error);
 export const getStatus = (error) => error?.response?.status ?? null;
 
-export function getErrorMessage(error) {
-  if (!error?.response) {
-    return error?.code === 'ECONNABORTED' || error?.code === 'ETIMEDOUT'
-      ? 'Сервер не ответил вовремя. Проверьте соединение и повторите попытку.'
-      : 'Не удалось связаться с сервером. Проверьте, что сервер запущен и есть подключение к сети.';
-  }
-  const { status, data } = error.response;
-  const text = typeof data?.error === 'string' ? data.error : '';
-  if (status >= 500) return text ? `${text}. Повторите попытку позже.` : 'Ошибка на стороне сервера. Повторите попытку позже.';
-  return text || `Запрос не выполнен (код ${status}).`;
-}
+// Тексты ошибок для интерфейса собирает errors.js: адреса запросов и прочий технический текст до пользователя не доходят
+export const getErrorMessage = humanizeError;
 
 export function getFieldErrors(error) {
   const details = error?.response?.data?.details;
   if (!Array.isArray(details)) return {};
-  return details.reduce((acc, { field, message }) => (field && !acc[field] ? { ...acc, [field]: message } : acc), {});
+  return details.reduce((acc, { field, message }) => (field && !acc[field] ? { ...acc, [field]: humanizeFieldMessage(message) } : acc), {});
 }
 
 export const getDetailMessages = (error) => {
   const details = error?.response?.data?.details;
-  return Array.isArray(details) ? details.map((item) => item.message) : [];
+  return Array.isArray(details) ? details.map((item) => humanizeFieldMessage(item.message)) : [];
 };
 
 //  Записи на приём: CRUD 
@@ -219,7 +224,7 @@ export const updatePatientProfile = (values) => api
   .patch('/me/patient', toApiProfile(values), { retry: false })
   .then(({ data }) => fromApiMe(data));
 
-// changes: { bloodType?, diseases?, medications? }
+// changes: { bloodType?, heightCm?, weightKg?, diseases?, medications? }
 export const updateRecord = (changes) => api
   .patch('/me/record', changes, { retry: false })
   .then(({ data }) => fromApiMe(data));
@@ -235,6 +240,16 @@ export const bookAppointment = ({ doctorId, date, time, reason }) => api
 export const cancelMyAppointment = (id) => api
   .post(`/me/appointments/${id}/cancel`, null, { retry: false })
   .then(({ data }) => fromApiAppointment(data));
+
+// Удалить отменённый или прошедший талон из своего списка (в клинике запись остаётся)
+export const deleteMyAppointment = (id) => api
+  .delete(`/me/appointments/${id}`, { retry: false })
+  .then(({ data }) => data);
+
+// Очистить архив: убрать все отменённые и прошедшие талоны
+export const clearMyArchive = () => api
+  .delete('/me/appointments', { retry: false })
+  .then(({ data }) => data);
 
 export const fetchDoctor = (id, signal) => api.get(`/doctors/${id}`, { signal }).then(({ data }) => data);
 

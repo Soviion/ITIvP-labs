@@ -71,6 +71,12 @@ module.exports = (sequelize, DataTypes) => {
         isIn: { args: [STATUSES], msg: `Поле «Статус» должно быть одним из: ${STATUSES.join(', ')}` },
       },
     },
+    // пациент удалил талон из своего списка (в клинике запись остаётся)
+    patientHidden: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
     cabinet: {
       type: DataTypes.STRING(10),
       validate: optionalText('Кабинет', 10),

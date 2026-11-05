@@ -16,6 +16,16 @@ module.exports = (sequelize, DataTypes) => {
     toJSON() {
       const values = super.toJSON();
       values.birthDate = toDisplayDate(values.birthDate);
+      // само фото в JSON не отдаём (оно скачивается отдельным запросом), только признак и версию для кэша
+      values.avatar = {
+        kind: values.avatarKind ?? null,
+        preset: values.avatarPreset ?? null,
+        version: values.avatarUpdatedAt ? new Date(values.avatarUpdatedAt).getTime() : null,
+      };
+      delete values.avatarKind;
+      delete values.avatarPreset;
+      delete values.avatarPhoto;
+      delete values.avatarUpdatedAt;
       return values;
     }
   }
@@ -93,6 +103,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING(300),
       validate: optionalText('Доверенное лицо', 300),
     },
+    avatarKind: { type: DataTypes.STRING(10), validate: { isIn: { args: [['preset', 'photo']], msg: 'Неизвестный тип аватара' } } },
+    avatarPreset: { type: DataTypes.SMALLINT, validate: { min: 1, max: 9 } },
+    avatarPhoto: DataTypes.BLOB,
+    avatarUpdatedAt: DataTypes.DATE,
     fullName: {
       type: DataTypes.VIRTUAL,
       get() {
@@ -105,6 +119,8 @@ module.exports = (sequelize, DataTypes) => {
     tableName: 'patients',
     underscored: true,
     paranoid: true,
+    // тяжёлое поле с фото по умолчанию не читаем: оно нужно только для аватара и Word-документа
+    defaultScope: { attributes: { exclude: ['avatarPhoto'] } },
     hooks: {
       // Каждому новому пациенту автоматически заводится медицинская карта (связь 1:1)
       async afterCreate(patient, options) {

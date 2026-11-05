@@ -36,8 +36,8 @@ export default function BookingPanel({ doctors, initial, mode, onSubmit, refresh
       <div className="bstep">
         <header><span className="rstep-num">1</span><h2>Выберите врача</h2></header>
 
-        {doctors.status === 'loading' && <div className="state-loading"><Spinner size={18} />Загружаем список врачей…</div>}
-        {doctors.status === 'error' && (
+        {(doctors.status === 'loading' || (doctors.status === 'error' && !doctors.error)) && <div className="state-loading"><Spinner size={18} />Загружаем список врачей…</div>}
+        {doctors.status === 'error' && doctors.error && (
           <div className="inline-error">
             <p>{doctors.error}</p>
             <Button size="sm" icon="refresh" onClick={doctors.reload}>Повторить</Button>

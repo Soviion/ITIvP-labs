@@ -11,6 +11,8 @@ const { signAccessToken } = require('../services/tokens');
 const { sendCodeEmail } = require('../services/mailer');
 const { issueCode, discardCode, checkCode, CODE_TTL_MINUTES, RESEND_SECONDS } = require('../services/emailCodes');
 const appointmentInclude = require('../services/appointmentInclude');
+const { processAvatar } = require('../services/avatarImage');
+const { mirror, syncCardFromRecord, refreshCardPatient } = require('../services/cardSync');
 const { jwt: jwtConfig } = require('../config/auth');
 
 const BLOOD_TYPES = ['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'];
@@ -26,10 +28,24 @@ async function patientOrFail(req) {
   return patient;
 }
 
+const BLOOD_CHANGE_DAYS = 7; // группу крови пациент меняет не чаще раза в неделю
+
+// Когда группу крови можно будет изменить снова (null, если уже можно)
+const bloodUnlockAt = (record) => {
+  if (!record?.bloodTypeChangedAt) return null;
+  const unlock = new Date(new Date(record.bloodTypeChangedAt).getTime() + BLOOD_CHANGE_DAYS * 24 * 3600 * 1000);
+  return unlock > new Date() ? unlock : null;
+};
+
+const dotDate = (date) => [date.getDate(), date.getMonth() + 1, date.getFullYear()].map((n, i) => (i < 2 ? String(n).padStart(2, '0') : n)).join('.');
+
 const recordView = (record) => (record ? {
   id: record.id,
   cardNumber: record.cardNumber,
   bloodType: record.bloodType,
+  bloodTypeNextChangeAt: bloodUnlockAt(record)?.toISOString() ?? null,
+  heightCm: record.heightCm,
+  weightKg: record.weightKg,
   diseases: record.diseases,
   medications: record.medications,
 } : null);
@@ -65,11 +81,12 @@ exports.updatePatient = async (req, res) => {
     throw new ApiError(400, 'Проверьте данные анкеты', [{ field: 'phone', message: 'Этот номер уже привязан к другому аккаунту' }]);
   }
   await patient.update(values);
+  await mirror('анкета пациента', () => refreshCardPatient(patient.id)); // личное дело врача обновляется тоже
   res.json(await meView(req.user.id));
 };
 
 function cleanList(value, label) {
-  if (!Array.isArray(value)) throw new ApiError(400, `Поле "${label}" должно быть списком`);
+  if (!Array.isArray(value)) throw new ApiError(400, 'Список указан неверно');
   const seen = new Set();
   const list = [];
   value.forEach((item) => {
@@ -82,7 +99,17 @@ function cleanList(value, label) {
   return list;
 }
 
-// PATCH /me/record — группа крови, заболевания, препараты
+// Рост (целые см) и вес (кг, один знак после запятой). Пустое значение сбрасывает поле
+function parseMeasure(value, label, min, max, integer) {
+  if (value === null || value === '') return null;
+  const number = typeof value === 'number' ? value : Number(String(value).replace(',', '.'));
+  if (!Number.isFinite(number) || number < min || number > max || (integer && !Number.isInteger(number))) {
+    throw new ApiError(400, `${label}: ${integer ? 'целое число' : 'число'} от ${min} до ${max}`, [{ field: label === 'Рост' ? 'heightCm' : 'weightKg', message: `от ${min} до ${max}` }]);
+  }
+  return integer ? number : Math.round(number * 10) / 10;
+}
+
+// PATCH /me/record — группа крови, рост, вес, заболевания, препараты
 exports.updateRecord = async (req, res) => {
   const patient = await patientOrFail(req);
   const body = getBody(req);
@@ -92,21 +119,76 @@ exports.updateRecord = async (req, res) => {
     if (body.bloodType !== null && body.bloodType !== '' && !BLOOD_TYPES.includes(body.bloodType)) {
       throw new ApiError(400, `Группа крови должна быть одной из: ${BLOOD_TYPES.join(', ')}`);
     }
-    changes.bloodType = body.bloodType || null;
+    const next = body.bloodType || null;
+    // та же группа – не изменение; первое указание группы ограничением не считается
+    if (next !== (patient.medicalRecord.bloodType ?? null)) {
+      const unlock = bloodUnlockAt(patient.medicalRecord);
+      if (unlock) throw new ApiError(409, `Группу крови можно менять раз в неделю. Следующее изменение доступно ${dotDate(unlock)}`);
+      changes.bloodType = next;
+      changes.bloodTypeChangedAt = new Date();
+    }
   }
+  if (body.heightCm !== undefined) changes.heightCm = parseMeasure(body.heightCm, 'Рост', 30, 250, true);
+  if (body.weightKg !== undefined) changes.weightKg = parseMeasure(body.weightKg, 'Вес', 2, 400, false);
   if (body.diseases !== undefined) changes.diseases = cleanList(body.diseases, 'diseases');
   if (body.medications !== undefined) changes.medications = cleanList(body.medications, 'medications');
-  if (!Object.keys(changes).length) throw new ApiError(400, 'Не переданы поля для обновления: bloodType, diseases, medications');
+  if (!Object.keys(changes).length) {
+    // передали только то, что уже сохранено (например, ту же группу крови): ничего менять не нужно
+    const known = ['bloodType', 'heightCm', 'weightKg', 'diseases', 'medications'];
+    if (known.some((field) => body[field] !== undefined)) return res.json(await meView(req.user.id));
+    throw new ApiError(400, 'Нет данных для сохранения');
+  }
 
   await patient.medicalRecord.update(changes);
+  await mirror('карта пациента', () => syncCardFromRecord(patient.id, Object.keys(changes))); // личное дело врача обновляется тоже
   res.json(await meView(req.user.id));
+};
+
+// ---------- Аватар ----------
+
+const AVATAR_PRESETS = 9;
+
+// PUT /me/avatar/preset { preset: 1..9 } — один из готовых аватаров
+exports.setAvatarPreset = async (req, res) => {
+  const patient = await patientOrFail(req);
+  const preset = Number(getBody(req).preset);
+  if (!Number.isInteger(preset) || preset < 1 || preset > AVATAR_PRESETS) {
+    throw new ApiError(400, `Выберите стикер от 1 до ${AVATAR_PRESETS}`);
+  }
+  await patient.update({ avatarKind: 'preset', avatarPreset: preset, avatarPhoto: null, avatarUpdatedAt: new Date() });
+  res.json(await meView(req.user.id));
+};
+
+// PUT /me/avatar/photo — тело запроса: сам файл (image/jpeg, image/png, image/webp). Сервер уменьшает его до 480×480
+exports.uploadAvatarPhoto = async (req, res) => {
+  const patient = await patientOrFail(req);
+  if (!Buffer.isBuffer(req.body) && req.headers['content-type']) {
+    throw new ApiError(415, 'Такой тип файла не поддерживается. Допустимо: JPEG, PNG, WebP');
+  }
+  const photo = await processAvatar(req.body);
+  await patient.update({ avatarKind: 'photo', avatarPreset: null, avatarPhoto: photo, avatarUpdatedAt: new Date() });
+  res.json(await meView(req.user.id));
+};
+
+// DELETE /me/avatar — вернуться к буквам инициалов
+exports.clearAvatar = async (req, res) => {
+  const patient = await patientOrFail(req);
+  await patient.update({ avatarKind: null, avatarPreset: null, avatarPhoto: null, avatarUpdatedAt: new Date() });
+  res.json(await meView(req.user.id));
+};
+
+// GET /me/avatar — загруженное фото (JPEG)
+exports.getAvatarPhoto = async (req, res) => {
+  const patient = await Patient.findOne({ where: { userId: req.user.id }, attributes: ['id', 'avatarKind', 'avatarPhoto'] });
+  if (!patient?.avatarPhoto || patient.avatarKind !== 'photo') throw new ApiError(404, 'Своё фото не загружено');
+  res.set({ 'Content-Type': 'image/jpeg', 'Cache-Control': 'private, max-age=86400' }).send(patient.avatarPhoto);
 };
 
 // ---------- Талоны пациента ----------
 
 const findOwn = async (patientId, id) => {
   const appointment = await Appointment.findOne({ where: { id, patientId }, include: appointmentInclude() });
-  if (!appointment) throw new ApiError(404, `Запись с id=${id} не найдена`);
+  if (!appointment) throw new ApiError(404, 'Запись не найдена');
   return appointment;
 };
 
@@ -124,7 +206,7 @@ const countActive = (patientId) => Appointment.count({
 exports.listAppointments = async (req, res) => {
   const patient = await patientOrFail(req);
   res.json(await Appointment.findAll({
-    where: { patientId: patient.id },
+    where: { patientId: patient.id, patientHidden: false },
     include: appointmentInclude(),
     order: [['date', 'ASC'], ['time', 'ASC'], ['id', 'ASC']],
   }));
@@ -180,6 +262,27 @@ exports.cancel = async (req, res) => {
   res.json(await findOwn(patient.id, appointment.id));
 };
 
+// Удалить можно отменённый или уже прошедший талон. Он пропадает из списка пациента, а в клинике остаётся (нужен врачу)
+const isRemovable = (appointment) => appointment.status !== 'scheduled' || hasStarted(appointment);
+
+// DELETE /me/appointments/:id
+exports.removeAppointment = async (req, res) => {
+  const patient = await patientOrFail(req);
+  const appointment = await findOwn(patient.id, parseId(req));
+  if (!isRemovable(appointment)) throw new ApiError(409, 'Предстоящий талон сначала нужно отменить, потом его можно удалить');
+  await appointment.update({ patientHidden: true });
+  res.json({ removed: 1, id: appointment.id });
+};
+
+// DELETE /me/appointments — очистить архив: убрать все отменённые и прошедшие талоны
+exports.clearArchive = async (req, res) => {
+  const patient = await patientOrFail(req);
+  const all = await Appointment.findAll({ where: { patientId: patient.id, patientHidden: false } });
+  const ids = all.filter(isRemovable).map((item) => item.id);
+  if (ids.length) await Appointment.update({ patientHidden: true }, { where: { id: ids, patientId: patient.id } });
+  res.json({ removed: ids.length });
+};
+
 // PATCH /me/appointments/:id — изменить время (в пределах расписания того же врача) и/или описание
 exports.updateAppointment = async (req, res) => {
   const patient = await patientOrFail(req);
@@ -219,7 +322,7 @@ exports.updateAppointment = async (req, res) => {
       changes.time = time;
     }
   }
-  if (!Object.keys(changes).length) throw new ApiError(400, 'Нет изменений: передайте date, time или reason');
+  if (!Object.keys(changes).length) throw new ApiError(400, 'Нет изменений для сохранения');
 
   await appointment.update(changes);
   res.json(await findOwn(patient.id, appointment.id));

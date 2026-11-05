@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import '../account.css';
 import { getDetailMessages, getErrorMessage, getFieldErrors, getStatus } from '../api';
 import { registerComplete, registerStart, registerVerify } from '../authApi';
 import PasswordChecklist from '../components/PasswordChecklist';
@@ -171,12 +172,20 @@ export default function RegisterPage() {
 
   return (
     <div className="register">
-      <title>Регистрация пациента — Клиника</title>
+      <title>Регистрация пациента — Твой талон</title>
       <div className="page-head">
         <div>
           <h1>Регистрация пациента</h1>
-          <p>Три шага: подтверждение почты, анкета и пароль. Уже есть аккаунт? <Link to="/">Войти</Link></p>
+          <p>Три шага: подтверждение почты, анкета и пароль</p>
         </div>
+      </div>
+
+      <div className="login-callout" role="note">
+        <div className="login-callout-text">
+          <strong>Уже есть аккаунт?</strong>
+          <span>Регистрироваться заново не нужно: войдите со своей почтой или телефоном и паролем.</span>
+        </div>
+        <Link to="/" className="btn btn-primary">Войти</Link>
       </div>
 
       {formError && <Banner kind="error">{formError}</Banner>}
@@ -276,6 +285,7 @@ export default function RegisterPage() {
           </Step>
         )}
       </div>
+
     </div>
   );
 }

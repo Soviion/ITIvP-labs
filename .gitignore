@@ -26,3 +26,10 @@ Thumbs.db
 # Build output
 dist/
 build/
+
+# Пароли врачей, созданные скриптом doctors:accounts
+doctor-passwords.local.txt
+
+Clinic API.postman_collection.json
+# Пароли демо-пациентов, созданные скриптом patients:seed
+patient-passwords.local.txt

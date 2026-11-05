@@ -6,6 +6,7 @@ module.exports = (sequelize, DataTypes) => {
   class User extends Model {
     static associate(models) {
       User.hasOne(models.Patient, { foreignKey: 'userId', as: 'patient' });
+      User.belongsTo(models.Doctor, { foreignKey: 'doctorId', as: 'doctor' });
     }
 
     // Служебные и секретные поля никогда не попадают в JSON-ответы API
@@ -41,13 +42,14 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING(100),
       allowNull: false,
     },
-    // patient — пациент личного кабинета, staff — сотрудник регистратуры
+    // patient — пациент личного кабинета, staff — сотрудник регистратуры, doctor — врач (привязан через doctorId), admin — администратор с доступом ко всему
     role: {
       type: DataTypes.STRING(20),
       allowNull: false,
       defaultValue: 'patient',
-      validate: { isIn: { args: [['patient', 'staff']], msg: 'Роль должна быть patient или staff' } },
+      validate: { isIn: { args: [['patient', 'staff', 'doctor', 'admin']], msg: 'Неизвестная роль пользователя' } },
     },
+    doctorId: { type: DataTypes.INTEGER, unique: true },
     isVerified: {
       type: DataTypes.BOOLEAN,
       allowNull: false,

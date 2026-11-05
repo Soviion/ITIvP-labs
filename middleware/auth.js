@@ -6,7 +6,7 @@ module.exports = async function auth(req, res, next) {
   try {
     const match = /^Bearer\s+(\S+)$/i.exec(req.headers.authorization || '');
     if (!match) {
-      throw new ApiError(401, 'Требуется авторизация: передайте заголовок Authorization: Bearer <token>');
+      throw new ApiError(401, 'Войдите в аккаунт, чтобы продолжить');
     }
     // вызов проверки токена и расшифровки payload
     const decoded = verifyToken(match[1], 'access');

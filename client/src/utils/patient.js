@@ -9,6 +9,17 @@ export const SOCIAL_STATUSES = [
 ];
 export const SOCIAL_LABELS = Object.fromEntries(SOCIAL_STATUSES.map((s) => [s.value, s.label]));
 
+// Индекс массы тела и словесная оценка по шкале ВОЗ
+export function bodyMassIndex(heightCm, weightKg) {
+  if (!heightCm || !weightKg) return null;
+  const value = Math.round((weightKg / ((heightCm / 100) ** 2)) * 10) / 10;
+  let label = 'норма';
+  if (value < 18.5) label = 'дефицит массы';
+  else if (value >= 30) label = 'ожирение';
+  else if (value >= 25) label = 'избыточная масса';
+  return { value, label };
+}
+
 export const BLOOD_TYPES = ['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'];
 
 // ---------- Адаптеры: формат API ↔ формат интерфейса ----------
@@ -29,6 +40,7 @@ export function fromApiPatient(patient) {
     address: patient.address ?? '',
     workplace: patient.workplace ?? '',
     trustedPerson: patient.trustedPerson ?? '',
+    avatar: patient.avatar ?? { kind: null, preset: null, version: null }, // стикер или своё фото (само фото грузится отдельно)
   };
 }
 
@@ -133,8 +145,7 @@ export function fullPatientName(patient) {
   return patient ? [patient.lastName, patient.firstName, patient.middleName].filter(Boolean).join(' ') : '';
 }
 
-export const initialsOf = (patient, email = '') => (patient
-  ? `${patient.firstName[0] ?? ''}${patient.lastName[0] ?? ''}`.toUpperCase()
-  : (email[0] ?? '?').toUpperCase());
-
-export const displayNameOf = (patient, email = '') => patient?.firstName ?? email.split('@')[0];
+// Имя в шапке: настоящие имя и фамилия пациента, а пока карточка не загрузилась (или у сотрудника) — часть почты до @
+export const displayNameOf = (patient, email = '') => (patient
+  ? [patient.firstName, patient.lastName].filter(Boolean).join(' ')
+  : email.split('@')[0]);

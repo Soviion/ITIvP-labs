@@ -1,0 +1,90 @@
+/* Страница «Контакты» */
+
+.contacts-quick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 16px; }
+.contacts-tile { display: grid; gap: 6px; align-content: start; padding: 18px; }
+.contacts-tile h2 { margin: 6px 0 0; font-size: 15px; font-weight: 650; }
+.contacts-tile p { margin: 0; }
+.contacts-icon { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--surface-2); color: var(--accent); }
+
+.contacts-dl { display: grid; gap: 4px; margin: 2px 0 0; }
+.contacts-dl > div { display: flex; justify-content: space-between; gap: 12px; }
+.contacts-dl dt { color: var(--ink-2); }
+.contacts-dl dd { margin: 0; font-weight: 600; text-align: right; }
+.mono { font-family: var(--mono); font-size: 12.5px; white-space: nowrap; }
+
+.contacts-alert {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--danger-line);
+  border-left: 4px solid var(--danger);
+  border-radius: var(--radius);
+  background: var(--danger-soft);
+  color: var(--danger-ink, var(--ink));
+}
+.contacts-alert strong { font-size: 16px; }
+.contacts-alert span { color: var(--ink); font-size: 13.5px; }
+
+.contacts-cols { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 16px; align-items: start; margin-bottom: 16px; }
+.contacts-side { display: grid; gap: 16px; }
+.contacts-block { display: grid; gap: 12px; padding: 20px; }
+.contacts-block h2 { margin: 0; font-size: 17px; font-weight: 650; }
+.contacts-block p { margin: 0; }
+
+.contacts-list { display: grid; gap: 8px; padding-left: 18px; list-style: disc; }
+.contacts-steps { display: grid; gap: 12px; counter-reset: step; }
+.contacts-steps li { position: relative; display: grid; gap: 2px; padding-left: 38px; counter-increment: step; }
+.contacts-steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.contacts-steps span { color: var(--ink-2); }
+.contacts-cta { justify-self: start; }
+
+.contacts-checks { display: grid; gap: 8px; }
+.contacts-checks li { display: flex; align-items: flex-start; gap: 8px; }
+.contacts-checks .icon { margin-top: 3px; color: var(--ok); }
+
+.contacts-faq details { border-top: 1px solid var(--line); padding: 12px 0; }
+.contacts-faq details:last-child { padding-bottom: 0; }
+.contacts-faq summary { cursor: pointer; font-weight: 600; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
+.contacts-faq summary::-webkit-details-marker { display: none; }
+.contacts-faq summary::after { content: '+'; flex: none; width: 22px; height: 22px; display: grid; place-items: center; border: 1px solid var(--line-strong); border-radius: var(--radius); color: var(--ink-2); font-weight: 700; line-height: 1; }
+.contacts-faq details[open] summary::after { content: '–'; }
+.contacts-faq details p { margin-top: 8px; color: var(--ink-2); max-width: 70ch; }
+
+/* Схема проезда */
+.contacts-map { display: block; width: 100%; height: auto; border: 1px solid var(--line-strong); border-radius: var(--radius); background: #eef1f5; font-family: var(--font); }
+.map-ground { fill: #eef1f5; }
+.map-road { fill: #fff; stroke: #cfd5dd; stroke-width: 1; }
+.map-dash { stroke: #c4cbd5; stroke-width: 2; stroke-dasharray: 10 8; }
+.map-block { fill: #dfe4ea; stroke: #cdd3db; }
+.map-building { fill: #cfdcf0; stroke: var(--accent); stroke-width: 2; }
+.map-label { fill: #4b5663; font-size: 12px; }
+.map-label-strong { fill: #14202b; font-size: 15px; font-weight: 700; }
+.map-stop { fill: #fff; stroke: #4b5663; }
+.map-stop-text { fill: #14202b; font-size: 10px; font-weight: 600; }
+.map-metro { fill: #c0392b; }
+.map-metro-text { fill: #fff; font-size: 14px; font-weight: 700; }
+.map-route { fill: none; stroke: var(--accent); stroke-width: 3; stroke-dasharray: 2 6; stroke-linecap: round; stroke-linejoin: round; }
+.map-pin { fill: var(--accent); stroke: #fff; stroke-width: 2; }
+
+@media (max-width: 1000px) {
+  .contacts-quick { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .contacts-cols { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .contacts-quick { grid-template-columns: 1fr; }
+}

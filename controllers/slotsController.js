@@ -5,7 +5,7 @@ const { bookableDates, isWorkday, slotsFor, loadBusy, todayIso, HORIZON_DAYS } =
 
 async function activeDoctorOrFail(rawId) {
   const id = Number(rawId);
-  if (!Number.isInteger(id) || id < 1) throw new ApiError(400, 'Параметр "doctorId" должен быть положительным целым числом');
+  if (!Number.isInteger(id) || id < 1) throw new ApiError(400, 'Некорректная ссылка на врача');
   const doctor = await Doctor.findOne({ where: { id, isActive: true } });
   if (!doctor) throw new ApiError(404, 'Врач не найден или не ведёт приём');
   return doctor;

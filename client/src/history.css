@@ -1,0 +1,36 @@
+/* «Моя история болезни»: список приёмов и страница приёма */
+
+.history-list { overflow: hidden; }
+.history-table { width: 100%; border-collapse: collapse; }
+.history-table th { padding: 10px 16px; border-bottom: 1px solid var(--line-strong); background: var(--surface-2); color: var(--ink-2); font-size: 12px; font-weight: 650; letter-spacing: 0.04em; text-align: left; text-transform: uppercase; }
+.history-table td { padding: 12px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.history-table tbody tr { cursor: pointer; }
+.history-table tbody tr:hover { background: var(--surface-2); }
+.history-table tbody tr:last-child td { border-bottom: 0; }
+.history-date { display: grid; gap: 2px; white-space: nowrap; }
+.history-date a { font-weight: 650; }
+.history-sub { color: var(--ink-2); font-size: 12.5px; }
+.history-diagnosis strong { display: block; }
+.history-open { text-align: right; white-space: nowrap; }
+
+.visit-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+.visit-toolbar .spacer { flex: 1; }
+.visit-paper { overflow-x: auto; padding: 16px; border: 1px solid var(--line); border-radius: var(--radius); background: #d9dde3; }
+
+.visit-refs { margin-top: 24px; display: grid; gap: 12px; }
+.visit-refs h2 { margin: 0; font-size: 17px; font-weight: 650; }
+.visit-ref-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.visit-ref-item { display: grid; gap: 1px; padding: 9px 14px; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--surface); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.visit-ref-item:hover { border-color: var(--ink-3); }
+.visit-ref-item.is-active { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent); }
+.visit-ref-item small { color: var(--ink-2); }
+
+@media (max-width: 720px) {
+  .history-table thead { display: none; }
+  .history-table tr, .history-table td { display: block; }
+  .history-table td { padding: 4px 16px; border: 0; }
+  .history-table tbody tr { padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .history-open { text-align: left; }
+}
+
+.history-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

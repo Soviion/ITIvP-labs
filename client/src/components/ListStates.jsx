@@ -26,6 +26,8 @@ export function LoadingState() {
 }
 
 export function ErrorState({ message, onRetry }) {
+  // нет связи с сервером: текст ошибки не показываем (его показывает окно «Нет связи»), список просто ждёт загрузки
+  if (!message) return <LoadingState />;
   return (
     <div className="state state-center" role="alert">
       <span className="state-icon state-icon-error"><Icon name="wifiOff" size={26} /></span>

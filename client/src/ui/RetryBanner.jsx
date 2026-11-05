@@ -20,7 +20,6 @@ export default function RetryBanner() {
               : `Повторяем запрос — попытка ${retry.attempt} из ${retry.max}…`}
           </span>
         </div>
-        <code className="retry-request">{retry.method} {retry.url}</code>
       </div>
       {waiting && <span key={`${retry.id}-${retry.attempt}`} className="retry-progress" style={{ animationDuration: `${retry.delayMs}ms` }} />}
     </div>

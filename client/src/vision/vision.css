@@ -1,0 +1,315 @@
+/* ============================================================================
+   Версия для слабовидящих. Включается атрибутами на <html> (см. vision.js):
+   data-vision="on", data-vscheme="bw|wb|yb", data-vimg="on|off".
+   Файл подключается последним, поэтому его правила перекрывают остальные стили.
+   ============================================================================ */
+
+/* ---------- Цветовые схемы: переопределяются те же переменные, которыми пользуется весь сайт ---------- */
+
+/* Чёрным по белому */
+html[data-vision][data-vscheme='bw'] {
+  --bg: #ffffff; --surface: #ffffff; --surface-2: #f0f0f0; --neutral-soft: #e4e4e4;
+  --line: #595959; --line-strong: #000000;
+  --ink: #000000; --ink-2: #000000; --ink-3: #1c1c1c;
+  --accent: #0a2a85; --accent-strong: #051a5c; --accent-soft: #e3eaff;
+  --danger: #8b0000; --danger-soft: #ffe9e9; --danger-line: #8b0000; --danger-ink: #5a0000;
+  --warn: #5c3300; --warn-soft: #fff1cc; --warn-line: #5c3300; --warn-ink: #3d2200; --warn-mark: #8a5200;
+  --info: #14276e; --info-soft: #e4e8ff; --info-line: #14276e; --info-ink: #0d1a4d;
+  --ok: #00551f; --ok-soft: #dff5e6; --ok-line: #00551f; --ok-ink: #003814;
+  --v-primary-bg: #0a2a85; --v-primary-ink: #ffffff; --v-on-danger: #ffffff; --v-on-accent: #ffffff;
+  color-scheme: light;
+}
+
+/* Белым по чёрному */
+html[data-vision][data-vscheme='wb'] {
+  --bg: #000000; --surface: #000000; --surface-2: #161616; --neutral-soft: #262626;
+  --line: #9a9a9a; --line-strong: #ffffff;
+  --ink: #ffffff; --ink-2: #ffffff; --ink-3: #e8e8e8;
+  --accent: #ffe600; --accent-strong: #fff27a; --accent-soft: #2b2700;
+  --danger: #ff9a90; --danger-soft: #2e0a08; --danger-line: #ff9a90; --danger-ink: #ffd6d2;
+  --warn: #ffd24d; --warn-soft: #2b2000; --warn-line: #ffd24d; --warn-ink: #ffe8a3; --warn-mark: #ffd24d;
+  --info: #9bbcff; --info-soft: #0a1630; --info-line: #9bbcff; --info-ink: #d6e4ff;
+  --ok: #7dff9f; --ok-soft: #052212; --ok-line: #7dff9f; --ok-ink: #c9ffd7;
+  --v-primary-bg: #ffe600; --v-primary-ink: #000000; --v-on-danger: #000000; --v-on-accent: #000000;
+  color-scheme: dark;
+}
+
+/* Жёлтым по тёмно-синему */
+html[data-vision][data-vscheme='yb'] {
+  --bg: #001040; --surface: #001a66; --surface-2: #00237f; --neutral-soft: #002a99;
+  --line: #e6d200; --line-strong: #ffe600;
+  --ink: #ffe600; --ink-2: #fff3a6; --ink-3: #fff7c2;
+  --accent: #ffffff; --accent-strong: #ffffff; --accent-soft: #0033b3;
+  --danger: #ffb3ab; --danger-soft: #4a0a14; --danger-line: #ffb3ab; --danger-ink: #ffd9d5;
+  --warn: #ffd24d; --warn-soft: #3a2d00; --warn-line: #ffd24d; --warn-ink: #ffe9a8; --warn-mark: #ffd24d;
+  --info: #b3ccff; --info-soft: #001a80; --info-line: #b3ccff; --info-ink: #dce8ff;
+  --ok: #8dffb0; --ok-soft: #003a1e; --ok-line: #8dffb0; --ok-ink: #ccffdc;
+  --v-primary-bg: #ffe600; --v-primary-ink: #001040; --v-on-danger: #001040; --v-on-accent: #001040;
+  color-scheme: dark;
+}
+
+/* ---------- Размер: один, масштабируется вся страница ---------- */
+html[data-vision] { --vz: 1.25; }
+html[data-vision] body { zoom: var(--vz); }
+
+/* Браузеры без zoom: хотя бы базовый размер шрифта */
+@supports not (zoom: 1) {
+  html[data-vision] body { font-size: 19px; }
+}
+
+/* ---------- Общие правила ---------- */
+html[data-vision] body {
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+  word-spacing: 0.08em;
+}
+html[data-vision] #root { max-width: 100%; }
+html[data-vision] img, html[data-vision] svg { max-width: 100%; }
+html[data-vision] p, html[data-vision] li, html[data-vision] dd, html[data-vision] td, html[data-vision] th { overflow-wrap: anywhere; }
+
+/* Без движения и теней: это отвлекает и мешает читать. Индикатор загрузки остаётся вращающимся */
+html[data-vision] *, html[data-vision] *::before, html[data-vision] *::after {
+  animation: none !important;
+  transition: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  scroll-behavior: auto !important;
+}
+html[data-vision] .spinner { animation: spin 1.2s linear infinite !important; }
+
+/* Ссылки всегда подчёркнуты */
+html[data-vision] a:not(.btn):not(.brand):not(.dr-brand):not(.skip-link) {
+  color: var(--accent);
+  font-weight: 650;
+  text-decoration: underline;
+  text-decoration-thickness: 0.1em;
+  text-underline-offset: 0.18em;
+}
+
+/* Видимый фокус */
+html[data-vision] :focus-visible,
+html[data-vision] input:focus,
+html[data-vision] select:focus,
+html[data-vision] textarea:focus {
+  outline: 4px solid var(--accent) !important;
+  outline-offset: 3px !important;
+  box-shadow: none !important;
+}
+/* ...кроме основного содержимого: оно получает фокус программно после перехода, рамка вокруг всей страницы не нужна */
+html[data-vision] #main-content:focus-visible { outline: none !important; }
+
+/* Ссылка «Перейти к основному содержимому» в цветах выбранной схемы */
+html[data-vision] .skip-link:focus {
+  background: var(--v-primary-bg);
+  color: var(--v-primary-ink);
+  border: 3px solid var(--line-strong);
+  font-size: 1.1em;
+}
+
+/* Крупные элементы управления с жёсткими рамками */
+html[data-vision] .btn,
+html[data-vision] .vbtn,
+html[data-vision] .chip-btn,
+html[data-vision] .tab,
+html[data-vision] .day-btn,
+html[data-vision] .slot,
+html[data-vision] .seg,
+html[data-vision] .segmented button {
+  min-height: 44px;
+  border-width: 2px;
+  border-style: solid;
+}
+html[data-vision] .btn { font-weight: 700; }
+html[data-vision] .btn-icon { min-width: 44px; }
+html[data-vision] .btn-ghost,
+html[data-vision] .btn-secondary { border-color: var(--line-strong); color: var(--ink); background: var(--surface); }
+html[data-vision] .btn-primary { background: var(--v-primary-bg); color: var(--v-primary-ink); border-color: var(--line-strong); }
+html[data-vision] .btn-danger { background: var(--danger); color: var(--v-on-danger); border-color: var(--line-strong); }
+
+html[data-vision] input:not([type='checkbox']):not([type='radio']):not([type='file']),
+html[data-vision] select,
+html[data-vision] textarea {
+  min-height: 44px;
+  border: 2px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: inherit;
+}
+html[data-vision] select { appearance: auto; background-image: none; padding-right: 12px; }
+html[data-vision] input[type='checkbox'], html[data-vision] input[type='radio'] { width: 24px; height: 24px; accent-color: var(--accent); }
+html[data-vision] ::placeholder { color: var(--ink-3); opacity: 1; }
+html[data-vision] label, html[data-vision] .field > label { font-weight: 700; color: var(--ink); }
+html[data-vision] .field-hint, html[data-vision] .muted, html[data-vision] .cell-sub, html[data-vision] .dr-sub { color: var(--ink-2); }
+html[data-vision] .field-error { color: var(--danger); font-weight: 650; }
+
+/* Карточки, таблицы, плашки, меню, окна: толстая контрастная рамка */
+html[data-vision] .card,
+html[data-vision] .banner,
+html[data-vision] .menu,
+html[data-vision] .modal-panel,
+html[data-vision] .toast,
+html[data-vision] .login-callout,
+html[data-vision] .state,
+html[data-vision] .preview,
+html[data-vision] .dropzone {
+  border: 2px solid var(--line-strong) !important;
+  background-color: var(--surface);
+  color: var(--ink);
+}
+html[data-vision] .banner-error { border-color: var(--danger-line) !important; background: var(--danger-soft); color: var(--danger-ink); }
+html[data-vision] .banner-warn { border-color: var(--warn-line) !important; background: var(--warn-soft); color: var(--warn-ink); }
+html[data-vision] .banner-info { border-color: var(--info-line) !important; background: var(--info-soft); color: var(--info-ink); }
+html[data-vision] .banner-success { border-color: var(--ok-line) !important; background: var(--ok-soft); color: var(--ok-ink); }
+html[data-vision] .toast span, html[data-vision] .toast-text span { color: var(--ink-2); }
+html[data-vision] .toast-close { color: var(--ink); }
+
+html[data-vision] table, html[data-vision] .data-table, html[data-vision] .dr-table { border-collapse: collapse; }
+html[data-vision] th, html[data-vision] td { border-color: var(--line-strong) !important; }
+html[data-vision] .data-table th, html[data-vision] .dr-table th, html[data-vision] th { background: var(--surface-2); color: var(--ink); font-weight: 700; }
+html[data-vision] .data-table td, html[data-vision] .dr-table td { border-bottom: 2px solid var(--line-strong); }
+html[data-vision] .tabs, html[data-vision] .cabinet-tabs { border-bottom: 2px solid var(--line-strong); }
+html[data-vision] .tab { color: var(--ink); background: transparent; border-color: transparent; border-bottom-color: var(--line-strong); font-weight: 700; }
+html[data-vision] .tab.is-active, html[data-vision] .tab[aria-pressed='true'] { border-color: var(--line-strong); border-bottom-color: var(--accent); border-bottom-width: 5px; color: var(--accent); }
+
+/* Выбранное состояние не только цветом: жирная рамка и инверсия */
+html[data-vision] .is-selected,
+html[data-vision] .is-active,
+html[data-vision] [aria-pressed='true'],
+html[data-vision] [aria-checked='true'] { border-width: 3px !important; border-color: var(--accent) !important; }
+html[data-vision] .chip-btn.is-active,
+html[data-vision] .day-btn.is-selected,
+html[data-vision] .slot.is-selected,
+html[data-vision] .doctor.is-selected .doctor-avatar,
+html[data-vision] .rstep.is-done .rstep-num,
+html[data-vision] .step-done .step-dot,
+html[data-vision] .app-tag,
+html[data-vision] .avatar-option-mark {
+  background: var(--v-primary-bg) !important;
+  color: var(--v-primary-ink) !important;
+}
+html[data-vision] .day-btn.is-selected *, html[data-vision] .slot.is-selected * { color: var(--v-primary-ink) !important; }
+html[data-vision] .doctor.is-selected { background: var(--accent-soft); }
+html[data-vision] .day-btn:disabled, html[data-vision] .slot:disabled, html[data-vision] .btn:disabled { opacity: 1; text-decoration: line-through; color: var(--ink-3); border-style: dashed; }
+
+/* Плашки статусов и бейджи: цвет усилен рамкой, значки внутри остаются */
+html[data-vision] .pill, html[data-vision] .chip, html[data-vision] .badge,
+html[data-vision] .dr-status, html[data-vision] .dr-tag, html[data-vision] .tab-count {
+  border: 2px solid currentColor !important;
+  font-weight: 700;
+}
+
+/* ---------- Шапки: разрешаем перенос, высота не фиксирована ---------- */
+html[data-vision] .vbar-inner,
+html[data-vision] .topbar-inner,
+html[data-vision] .dr-top-inner { height: auto; min-height: var(--topbar-h); flex-wrap: wrap; row-gap: 8px; padding-top: 8px; padding-bottom: 8px; }
+html[data-vision] .topbar, html[data-vision] .dr-top { border-bottom: 3px solid var(--line-strong); background: var(--surface); position: static; }
+html[data-vision] .nav, html[data-vision] .dr-nav { flex-wrap: wrap; }
+html[data-vision] .nav a, html[data-vision] .dr-nav-link { color: var(--ink); min-height: 44px; display: inline-flex; align-items: center; }
+html[data-vision] .nav a.active, html[data-vision] .dr-nav-link.is-active { border-bottom: 5px solid var(--accent); color: var(--accent); }
+html[data-vision] .logo-text small, html[data-vision] .dr-brand small, html[data-vision] .dr-who-text small { color: var(--ink-2); }
+html[data-vision] .avatar-btn { border: 2px solid var(--line-strong); }
+html[data-vision] .a11y-btn { border: 2px solid var(--line-strong); }
+
+/* ---------- Подвал сайта и тёмные боковые панели: переводим на цвета схемы ---------- */
+html[data-vision] .site-footer { background: var(--surface-2); color: var(--ink); border-top: 4px solid var(--line-strong); }
+html[data-vision] .site-footer a,
+html[data-vision] .footer-link-btn,
+html[data-vision] .site-footer a.footer-doctor { color: var(--accent); font-size: inherit; font-weight: 650; text-decoration: underline; }
+html[data-vision] .footer-title, html[data-vision] .footer-note b, html[data-vision] .footer-facts dd { color: var(--ink); }
+html[data-vision] .footer-note, html[data-vision] .footer-facts dt, html[data-vision] .site-footer-bar { color: var(--ink-2); }
+html[data-vision] .site-footer-bar { border-top-color: var(--line-strong); }
+
+html[data-vision] .auth-aside, html[data-vision] .dr-login-side { background: var(--surface-2); color: var(--ink); border-left: 2px solid var(--line-strong); }
+html[data-vision] .aside-text, html[data-vision] .dr-login-text p, html[data-vision] .dr-login-text li { color: var(--ink); }
+html[data-vision] .dr-login-brand, html[data-vision] .dr-login-brand .dr-mark { color: var(--ink); }
+html[data-vision] .dr-login-text li::before { background: var(--ink); }
+
+/* ---------- Документы остаются белыми листами с чёрным текстом: возвращаем им обычные цвета ---------- */
+html[data-vision] .doc-sheet,
+html[data-vision] .doc-sheet * {
+  --ink: #000; --ink-2: #222; --ink-3: #444; --line: #777; --line-strong: #000;
+  --surface: #fff; --surface-2: #f0f0f0; --accent: #0a2a85; --accent-strong: #051a5c; --accent-soft: #e6ecfa;
+  --danger: #8b0000; --ok: #00551f; --warn: #5c3300; --info: #14276e;
+}
+html[data-vision] .doc-sheet { background: #fff !important; color: #000 !important; border-color: #000 !important; zoom: 1; }
+html[data-vision] .doc-sheet input, html[data-vision] .doc-sheet textarea, html[data-vision] .doc-sheet select { background: #fffbe6; color: #000; border-color: #000; }
+html[data-vision] .doc-sheet a { color: #0a2a85; }
+html[data-vision] .dr-paper, html[data-vision] .visit-paper { background: var(--surface-2) !important; border: 2px solid var(--line-strong); }
+
+/* ---------- Изображения ---------- */
+html[data-vision][data-vimg='off'] .avatar-pic > svg,
+html[data-vision][data-vimg='off'] .contacts-map,
+html[data-vision][data-vimg='off'] picture { display: none !important; }
+/* Фото скрываются визуально, но остаются в дереве доступности: display:none унёс бы вместе с картинкой и её alt,
+   а скринридер должен по-прежнему прочитать «Фото пациента» */
+html[data-vision][data-vimg='off'] img {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  clip-path: inset(50%) !important;
+  pointer-events: none !important;
+}
+html[data-vision][data-vimg='off'] .avatar-pic { background: var(--surface-2); border: 2px solid var(--line-strong); }
+
+/* ---------- Панель настроек ---------- */
+.vbar { position: relative; z-index: 30; background: var(--surface-2); border-bottom: 4px solid var(--line-strong); color: var(--ink); }
+.vbar-inner { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px 28px; max-width: 1240px; margin: 0 auto; padding: 12px 24px 14px; }
+.vbar-group { display: grid; gap: 6px; }
+.vbar-title { font-weight: 700; font-size: 14px; }
+.vbar-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.vbtn {
+  padding: 6px 16px;
+  min-width: 52px;
+  border: 2px solid var(--line-strong);
+  border-radius: 3px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.vbtn:hover { background: var(--accent-soft); }
+.vbtn[aria-pressed='true'] { border-width: 4px; padding: 4px 14px; background: var(--accent-soft); }
+/* Галочка нужна глазам; скринридеру состояние уже сообщает aria-pressed, поэтому у символа пустая текстовая замена
+   (первая строка — запасная для браузеров, которые не знают синтаксис «content: ... / альтернатива») */
+.vbtn[aria-pressed='true']::before { content: '✓ '; content: '✓ ' / ''; }
+
+/* Образцы цветовых схем нарисованы своими цветами, чтобы сразу было видно результат */
+.vbtn-scheme[data-scheme='bw'] { background: #fff; color: #000; }
+.vbtn-scheme[data-scheme='wb'] { background: #000; color: #fff; }
+.vbtn-scheme[data-scheme='yb'] { background: #001a66; color: #ffe600; }
+.vbtn-scheme:hover { filter: none; outline: 3px dotted var(--ink); outline-offset: 2px; }
+
+.vbtn-exit { margin-left: auto; padding: 10px 26px; background: var(--v-primary-bg); color: var(--v-primary-ink); font-size: 1.1em; }
+.vbtn-exit:hover { background: var(--v-primary-bg); outline: 3px dotted var(--ink); outline-offset: 2px; }
+
+/* ---------- Раскладка при увеличении ---------- */
+
+/* экран во всю высоту окна, а не во всю высоту с учётом масштаба */
+html[data-vision] .auth, html[data-vision] .dr-login, html[data-vision] .dr-shell { min-height: calc(100vh / var(--vz, 1)); }
+
+/* панель настроек не растёт вместе с текстом: она и так крупная */
+html[data-vision] .vbar { zoom: 0.9; }
+
+html[data-vision] .mono { white-space: normal; overflow-wrap: anywhere; }
+
+/* ---------- Печать: версия для слабовидящих на бумагу не влияет ---------- */
+@media print {
+  .vbar { display: none !important; }
+  html[data-vision] body { zoom: 1 !important; line-height: normal; letter-spacing: normal; word-spacing: normal; }
+  html[data-vision][data-vscheme] {
+    --bg: #fff; --surface: #fff; --surface-2: #f0f0f0; --line: #777; --line-strong: #000;
+    --ink: #000; --ink-2: #222; --ink-3: #444; --accent: #0a2a85;
+    color-scheme: light;
+  }
+}
+
+/* Таблица записей врача при крупном тексте: имена не рвутся посреди слова, при нехватке места таблица прокручивается */
+html[data-vision] .dr-table-wrap { overflow-x: auto; }
+html[data-vision] .dr-table { min-width: 760px; }
+html[data-vision] .dr-table td, html[data-vision] .dr-table th { overflow-wrap: normal; word-break: normal; }
+html[data-vision] .dr-person strong { overflow-wrap: normal; word-break: normal; }

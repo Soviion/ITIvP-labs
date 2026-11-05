@@ -22,8 +22,8 @@ function getTransporter() {
 }
 
 const SUBJECTS = {
-  register: 'Код подтверждения почты — Клиника',
-  change_email: 'Код для смены почты — Клиника',
+  register: 'Код подтверждения почты — Твой талон',
+  change_email: 'Код для смены почты — Твой талон',
 };
 
 // Письмо с одноразовым 6-значным кодом (регистрация и смена почты)
@@ -48,6 +48,35 @@ async function sendCodeEmail(to, code, purpose, ttlMinutes) {
   });
 }
 
+// Письмо новому врачу: роль, почта, пароль и кнопка «Войти» (ведёт на страницу входа врачей)
+async function sendAccessEmail(to, password, loginUrl, clinicName = 'Моя клиника') {
+  await getTransporter().sendMail({
+    from: smtp.from,
+    to,
+    subject: `Вам открыт доступ к сервису — ${clinicName}`,
+    text: [
+      'Вам открыт доступ к сервису.',
+      '',
+      'Роль: врач',
+      `Почта: ${to}`,
+      `Пароль: ${password}`,
+      '',
+      `Войти: ${loginUrl}`,
+    ].join('\n'),
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;color:#14202b">
+        <h2 style="margin:0 0 14px">Вам открыт доступ к сервису</h2>
+        <table style="border-collapse:collapse;width:100%;font-size:15px">
+          <tr><td style="padding:8px 0;color:#5b6773;width:90px">Роль</td><td style="padding:8px 0"><b>врач</b></td></tr>
+          <tr><td style="padding:8px 0;color:#5b6773">Почта</td><td style="padding:8px 0"><b>${to}</b></td></tr>
+          <tr><td style="padding:8px 0;color:#5b6773">Пароль</td><td style="padding:8px 0"><b style="font-family:Consolas,monospace;font-size:17px">${password}</b></td></tr>
+        </table>
+        <p style="margin:24px 0 8px"><a href="${loginUrl}" style="display:inline-block;padding:11px 28px;background:#1d5fb4;color:#fff;text-decoration:none;font-weight:700">Войти</a></p>
+        <p style="color:#76808b;font-size:12px">Если вы не ожидали это письмо, просто проигнорируйте его.</p>
+      </div>`,
+  });
+}
+
 // Проверка настроек SMTP (npm run mail:check)
 async function verifyConnection() {
   await getTransporter().verify();
@@ -62,4 +91,4 @@ async function sendTestEmail() {
   });
 }
 
-module.exports = { sendCodeEmail, verifyConnection, sendTestEmail };
+module.exports = { sendCodeEmail, sendAccessEmail, verifyConnection, sendTestEmail };

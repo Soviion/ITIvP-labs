@@ -4,6 +4,7 @@
   "description": "REST API для системы управления клиникой",
   "main": "server.js",
   "scripts": {
+    "predev": "kill-port 3000",
     "start": "node server.js",
     "dev": "nodemon server.js",
     "db:migrate": "sequelize-cli db:migrate",
@@ -12,7 +13,14 @@
     "db:seed": "sequelize-cli db:seed:all",
     "db:seed:undo": "sequelize-cli db:seed:undo:all",
     "mail:check": "node scripts/checkMail.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "mongo:seed": "node scripts/seedMongo.js",
+    "doctors:accounts": "node scripts/createDoctorAccounts.js",
+    "admin:create": "node scripts/createAdmin.js",
+    "auth:check": "node scripts/authCheck.js",
+    "records:sync": "node scripts/syncVisitsToRecords.js",
+    "patients:seed": "node scripts/seedPatients.js",
+    "patients:reset": "node scripts/seedPatients.js --reset"
   },
   "keywords": [],
   "author": "",
@@ -21,6 +29,7 @@
   "dependencies": {
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
+    "docx": "^9.15.2",
     "dotenv": "^18.0.1",
     "express": "^5.2.1",
     "express-rate-limit": "^8.7.1",
@@ -31,9 +40,11 @@
     "pg": "^8.23.0",
     "pg-hstore": "^2.3.4",
     "qrcode": "^1.5.4",
-    "sequelize": "^6.37.8"
+    "sequelize": "^6.37.8",
+    "sharp": "^0.35.5"
   },
   "devDependencies": {
+    "kill-port": "^2.0.1",
     "nodemon": "^3.1.14",
     "sequelize-cli": "^6.6.5"
   }

@@ -29,8 +29,8 @@ export default function HonorBoard({ doctors }) {
         <h2><Icon name="award" size={17} /> Доска почёта</h2>
         <span className="honor-sub">наши врачи</span>
       </header>
-      {doctors.status === 'loading' && <div className="state-loading"><Spinner size={18} />Загружаем…</div>}
-      {doctors.status === 'error' && <p className="muted">Не удалось загрузить врачей.</p>}
+      {(doctors.status === 'loading' || (doctors.status === 'error' && !doctors.error)) && <div className="state-loading"><Spinner size={18} />Загружаем…</div>}
+      {doctors.status === 'error' && doctors.error && <p className="muted">Не удалось загрузить врачей.</p>}
       <ul>
         {picked.map((doctor) => {
           const profile = profileFor(doctor);

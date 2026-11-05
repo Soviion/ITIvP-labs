@@ -12,13 +12,19 @@ const TRAILS = {
   '/cabinet/history': [HOME, CABINET, { label: 'История болезни' }],
   '/cabinet/settings': [HOME, CABINET, { label: 'Настройки' }],
   '/staff': [HOME, { label: 'Регистратура' }],
+  '/contacts': [HOME, { label: 'Контакты и FAQ' }],
 };
 
 export default function Breadcrumbs() {
   const { pathname, state } = useLocation();
   const doctorPage = useMatch('/doctors/:id');
+  const visitPage = useMatch('/cabinet/history/:visitId');
   // профиль врача: имя передаётся из ссылки (state), пока оно неизвестно — общая подпись
-  const trail = doctorPage ? [HOME, { label: `Врач: ${state?.name ?? 'профиль'}` }] : TRAILS[pathname.replace(/\/+$/, '') || '/'];
+  const trail = doctorPage
+    ? [HOME, { label: `Врач: ${state?.name ?? 'профиль'}` }]
+    : visitPage
+      ? [HOME, CABINET, { to: '/cabinet/history', label: 'История болезни' }, { label: 'Приём' }]
+      : TRAILS[pathname.replace(/\/+$/, '') || '/'];
   if (!trail) return null;
 
   return (

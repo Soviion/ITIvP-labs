@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { cancelMyAppointment, fetchMyAppointments, getErrorMessage, isCanceled, updateMyAppointment } from '../api';
+import { cancelMyAppointment, clearMyArchive, deleteMyAppointment, fetchMyAppointments, getErrorMessage, isCanceled, updateMyAppointment } from '../api';
 import { useToast } from '../ui/toastContext';
 
 // Талоны пациента: загрузка, отмена и редактирование с оптимистичным обновлением (при ошибке всё возвращается).
@@ -42,6 +42,31 @@ export default function useMyAppointments({ enabled = true } = {}) {
     }
   }, [toast]);
 
+  // Удаление из списка: талон исчезает сразу, при ошибке возвращается на место
+  const remove = useCallback(async (item) => {
+    setItems((list) => list.filter((i) => i.id !== item.id));
+    try {
+      await deleteMyAppointment(item.id);
+      toast.success('Талон удалён');
+    } catch (err) {
+      setItems((list) => [...list, item]);
+      toast.error(getErrorMessage(err), { title: 'Талон не удалён' });
+    }
+  }, [toast]);
+
+  // Очистить архив: переданные талоны убираются из списка, при ошибке возвращаются
+  const clearArchive = useCallback(async (archived) => {
+    const ids = new Set(archived.map((i) => i.id));
+    setItems((list) => list.filter((i) => !ids.has(i.id)));
+    try {
+      await clearMyArchive();
+      toast.success('Архив очищен');
+    } catch (err) {
+      setItems((list) => [...list, ...archived]);
+      toast.error(getErrorMessage(err), { title: 'Архив не очищен' });
+    }
+  }, [toast]);
+
   // changes: { date?, time?, reason? }
   const edit = useCallback(async (item, changes) => {
     setItems((list) => list.map((i) => (i.id === item.id ? { ...i, ...changes, pending: true } : i)));
@@ -55,5 +80,5 @@ export default function useMyAppointments({ enabled = true } = {}) {
     }
   }, [toast]);
 
-  return { items, status, error, reload, cancel, edit };
+  return { items, status, error, reload, cancel, edit, remove, clearArchive };
 }

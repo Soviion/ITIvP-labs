@@ -8,13 +8,16 @@ import useMyAppointments from '../hooks/useMyAppointments';
 import { formatShortDate } from '../utils/dates';
 import { MAX_ACTIVE_TICKETS, byTimeAsc, byTimeDesc, isActiveTicket } from '../utils/tickets';
 import Banner from '../ui/Banner';
+import Button from '../ui/Button';
 import Icon from '../ui/Icon';
 
 export default function CabinetTicketsPage() {
-  const { items, status, error, reload, cancel, edit } = useMyAppointments();
+  const { items, status, error, reload, cancel, edit, remove, clearArchive } = useMyAppointments();
   const [tab, setTab] = useState('active'); // active | archive
   const [toCancel, setToCancel] = useState(null);
   const [toEdit, setToEdit] = useState(null);
+  const [toDelete, setToDelete] = useState(null); // один талон из архива
+  const [clearing, setClearing] = useState(false); // подтверждение очистки всего архива
 
   const active = useMemo(() => items.filter(isActiveTicket).sort(byTimeAsc), [items]);
   const archive = useMemo(() => items.filter((item) => !isActiveTicket(item)).sort(byTimeDesc), [items]);
@@ -26,6 +29,17 @@ export default function CabinetTicketsPage() {
     await cancel(item);
   }
 
+  async function confirmDelete() {
+    const item = toDelete;
+    setToDelete(null);
+    await remove(item);
+  }
+
+  async function confirmClear() {
+    setClearing(false);
+    await clearArchive(archive);
+  }
+
   async function saveEdit(item, changes) {
     setToEdit(null);
     await edit(item, changes);
@@ -35,7 +49,7 @@ export default function CabinetTicketsPage() {
 
   return (
     <>
-      <title>Мои талоны — Клиника</title>
+      <title>Мои талоны — Твой талон</title>
       <div className="page-head">
         <div>
           <h1>Мои талоны</h1>
@@ -48,14 +62,21 @@ export default function CabinetTicketsPage() {
 
       {limitReached && <Banner kind="warn" title="Достигнут лимит записей">Можно иметь не больше {MAX_ACTIVE_TICKETS} активных талонов. Отмените один из них, чтобы записаться снова.</Banner>}
 
-      <div className="tabs" role="tablist" aria-label="Талоны">
-        <button type="button" role="tab" aria-selected={tab === 'active'} className={`tab ${tab === 'active' ? 'is-active' : ''}`} onClick={() => setTab('active')}>
+      <div className="tabs" role="group" aria-label="Показать талоны">
+        <button type="button" aria-pressed={tab === 'active'} className={`tab ${tab === 'active' ? 'is-active' : ''}`} onClick={() => setTab('active')}>
           Активные{status === 'ready' && <span className="tab-count">{active.length}</span>}
         </button>
-        <button type="button" role="tab" aria-selected={tab === 'archive'} className={`tab ${tab === 'archive' ? 'is-active' : ''}`} onClick={() => setTab('archive')}>
+        <button type="button" aria-pressed={tab === 'archive'} className={`tab ${tab === 'archive' ? 'is-active' : ''}`} onClick={() => setTab('archive')}>
           Архив{status === 'ready' && <span className="tab-count">{archive.length}</span>}
         </button>
       </div>
+
+      {tab === 'archive' && status === 'ready' && archive.length > 0 && (
+        <div className="tickets-toolbar">
+          <span className="muted">Удаление убирает талон только из вашего списка.</span>
+          <Button size="sm" icon="trash" onClick={() => setClearing(true)}>Очистить архив</Button>
+        </div>
+      )}
 
       <section className="card list tickets" aria-label="Список талонов">
         {status === 'loading' && <LoadingState />}
@@ -70,12 +91,34 @@ export default function CabinetTicketsPage() {
         )}
         {status === 'ready' && shown.length > 0 && (
           <ul>
-            {shown.map((item) => <TicketCard key={item.id} item={item} onCancel={tab === 'active' ? setToCancel : undefined} onEdit={tab === 'active' ? setToEdit : undefined} />)}
+            {shown.map((item) => <TicketCard key={item.id} item={item} onCancel={tab === 'active' ? setToCancel : undefined} onEdit={tab === 'active' ? setToEdit : undefined} onDelete={tab === 'archive' ? setToDelete : undefined} />)}
           </ul>
         )}
       </section>
 
       <EditTicketModal item={toEdit} onSave={saveEdit} onClose={() => setToEdit(null)} />
+
+      <ConfirmDialog
+        open={Boolean(toDelete)}
+        title="Удалить талон?"
+        confirmLabel="Удалить"
+        danger
+        onConfirm={confirmDelete}
+        onClose={() => setToDelete(null)}
+      >
+        {toDelete && <p className="confirm-text">Талон на {formatShortDate(toDelete.date)} в {toDelete.time} пропадёт из вашего списка.</p>}
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        open={clearing}
+        title="Очистить архив?"
+        confirmLabel="Очистить"
+        danger
+        onConfirm={confirmClear}
+        onClose={() => setClearing(false)}
+      >
+        <p className="confirm-text">Все отменённые и прошедшие талоны ({archive.length}) пропадут из вашего списка. Активные записи не затрагиваются.</p>
+      </ConfirmDialog>
 
       <ConfirmDialog
         open={Boolean(toCancel)}

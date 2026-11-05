@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getErrorMessage, getStatus } from '../api';
+import { serverMessage } from '../errors';
 import { login, loginTwoFactor } from '../authApi';
+import '../account.css';
 import { useAuth } from '../auth/context';
 import Banner from '../ui/Banner';
 import Button from '../ui/Button';
@@ -59,9 +61,9 @@ function CredentialsStep({ defaultEmail, onTwoFactor }) {
       {auth.notice && !problem && <Banner kind="info">{auth.notice}</Banner>}
       {problem && <Banner kind="error">{problem}</Banner>}
 
-      <div className="segmented" role="tablist" aria-label="Способ входа">
-        <button type="button" role="tab" aria-selected={mode === 'email'} className={mode === 'email' ? 'is-active' : ''} onClick={() => { setMode('email'); setErrors({}); }}>По почте</button>
-        <button type="button" role="tab" aria-selected={mode === 'phone'} className={mode === 'phone' ? 'is-active' : ''} onClick={() => { setMode('phone'); setErrors({}); }}>По телефону</button>
+      <div className="segmented" role="group" aria-label="Способ входа">
+        <button type="button" aria-pressed={mode === 'email'} className={mode === 'email' ? 'is-active' : ''} onClick={() => { setMode('email'); setErrors({}); }}>По почте</button>
+        <button type="button" aria-pressed={mode === 'phone'} className={mode === 'phone' ? 'is-active' : ''} onClick={() => { setMode('phone'); setErrors({}); }}>По телефону</button>
       </div>
 
       {mode === 'email' ? (
@@ -110,7 +112,7 @@ function CodeStep({ session, onBack, onExpired }) {
     } catch (err) {
       const message = getErrorMessage(err);
       // временный токен живёт 5 минут: если он протух, код вводить уже бесполезно
-      if (getStatus(err) === 401 && /токен/i.test(message)) {
+      if (getStatus(err) === 401 && /токен/i.test(serverMessage(err))) {
         onExpired('Время на ввод кода истекло. Войдите ещё раз.');
         return;
       }
@@ -184,7 +186,7 @@ export default function LoginPanel({ registeredEmail }) {
         : <CodeStep session={session} onBack={() => backToCredentials()} onExpired={backToCredentials} />}
 
       {step === 'credentials' && (
-        <p className="login-foot">Впервые у нас? <Link to="/register">Зарегистрироваться</Link></p>
+        <p className="login-foot">Впервые у нас? <Link to="/register" className="login-foot-link">Зарегистрироваться</Link></p>
       )}
     </section>
   );

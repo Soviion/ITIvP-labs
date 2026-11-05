@@ -11,7 +11,7 @@ function fromDisplayDate(value, field = 'date') {
       return `${yyyy}-${mm}-${dd}`;
     }
   }
-  throw new ApiError(400, `Поле "${field}" должно быть существующей датой в формате dd-mm-yyyy`);
+  throw new ApiError(400, 'Укажите существующую дату');
 }
 
 function toDisplayDate(iso) {
@@ -24,7 +24,7 @@ function fromDisplayTime(value, field = 'time') {
   if (typeof value === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(value)) {
     return value;
   }
-  throw new ApiError(400, `Поле "${field}" должно быть временем в формате HH:MM (00:00–23:59)`);
+  throw new ApiError(400, 'Укажите время от 00:00 до 23:59');
 }
 
 function toDisplayTime(time) {

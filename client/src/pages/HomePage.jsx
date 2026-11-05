@@ -23,7 +23,7 @@ import { useToast } from '../ui/toastContext';
 
 // Справа для вошедшего пациента: ближайшая запись
 function NextTicket({ mine }) {
-  const { items, status } = mine;
+  const { items, status, error } = mine;
   const next = useMemo(() => items.filter(isActiveTicket).sort(byTimeAsc)[0], [items]);
   return (
     <section className="card side-card">
@@ -31,8 +31,8 @@ function NextTicket({ mine }) {
         <h2>Ближайшая запись</h2>
         <Link to="/cabinet/tickets">Все талоны</Link>
       </header>
-      {status === 'loading' && <div className="state-loading"><Spinner size={18} />Загружаем…</div>}
-      {status === 'error' && <p className="muted">Не удалось загрузить записи.</p>}
+      {(status === 'loading' || (status === 'error' && !error)) && <div className="state-loading"><Spinner size={18} />Загружаем…</div>}
+      {status === 'error' && error && <p className="muted">Не удалось загрузить записи.</p>}
       {status === 'ready' && !next && (
         <div className="side-empty">
           <Icon name="calendar" size={22} />
@@ -109,11 +109,11 @@ export default function HomePage() {
 
   return (
     <>
-      <title>Запись на приём — Клиника</title>
+      <title>Запись на приём — Твой талон</title>
       <div className="page-head">
         <div>
           <h1>Запись на приём</h1>
-          <p>Свободные талоны к врачам клиники на ближайшие две недели</p>
+          <p>Свободные талоны к врачам на ближайшие две недели</p>
         </div>
       </div>
 

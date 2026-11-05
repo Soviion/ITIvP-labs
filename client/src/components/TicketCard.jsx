@@ -8,7 +8,7 @@ import Spinner from '../ui/Spinner';
 const MONTHS = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
 
 // Один талон: дата крупно слева, врач и причина в центре, статус и действия справа
-export default function TicketCard({ item, onCancel, onEdit }) {
+export default function TicketCard({ item, onCancel, onEdit, onDelete }) {
   const date = parseISO(item.date);
   const heading = formatDayHeading(item.date);
   const busy = Boolean(item.pending);
@@ -29,6 +29,11 @@ export default function TicketCard({ item, onCancel, onEdit }) {
       <div className="ticket-side">
         <span className={`pill s-${item.status}`}><i className="dot" />{STATUS_LABELS[item.status]}</span>
         {busy && <span className="saving"><Spinner size={14} /> Отменяем…</span>}
+        {!busy && onDelete && (
+          <div className="ticket-actions">
+            <Button size="sm" icon="trash" onClick={() => onDelete(item)}>Удалить</Button>
+          </div>
+        )}
         {!busy && canCancelTicket(item) && (onEdit || onCancel) && (
           <div className="ticket-actions">
             {onEdit && <Button size="sm" icon="pencil" onClick={() => onEdit(item)}>Изменить</Button>}

@@ -14,6 +14,8 @@ router.post('/register/verify', limiters.credentials, registration.verify);
 router.post('/register/complete', limiters.credentials, registration.complete);
 
 router.post('/login', limiters.credentials, controller.login);
+router.post('/doctor/login', limiters.credentials, controller.doctorLogin);
+router.post('/doctor/login/2fa', limiters.credentials, controller.doctorLoginTwoFactor);
 router.post('/login/2fa', limiters.credentials, controller.loginTwoFactor);
 
 // Требуют авторизации

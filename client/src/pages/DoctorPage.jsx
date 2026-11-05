@@ -72,7 +72,7 @@ export default function DoctorPage() {
 
   return (
     <>
-      <title>{`${fullName(doctor)} — Клиника`}</title>
+      <title>{`${fullName(doctor)} — Твой талон`}</title>
       <section className="card doctor-hero">
         <DoctorPhoto look={profile.look} photo={profile.photo} size={168} rounded={20} label={fullName(doctor)} />
         <div className="doctor-hero-main">

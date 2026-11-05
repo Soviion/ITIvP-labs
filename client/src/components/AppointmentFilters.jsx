@@ -10,13 +10,12 @@ export default function AppointmentFilters({ filters, onChange, counts, doctors,
 
   return (
     <div className="filters">
-      <div className="tabs" role="tablist" aria-label="Фильтр по статусу">
+      <div className="tabs" role="group" aria-label="Фильтр по статусу">
         {tabs.map((tab) => (
           <button
             key={tab.value}
             type="button"
-            role="tab"
-            aria-selected={filters.status === tab.value}
+            aria-pressed={filters.status === tab.value}
             className={`tab ${filters.status === tab.value ? 'is-active' : ''}`}
             onClick={() => set({ status: tab.value })}
             disabled={disabled}

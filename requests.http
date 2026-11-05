@@ -178,3 +178,145 @@ DELETE {{host}}/appointments/999
 
 ### 404
 GET {{host}}/unknown-route
+
+
+########## MongoDB (лабораторная №6) ##########
+# Нужен вход сотрудником (роль staff). Подставьте свои почту и пароль.
+
+### @name login
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "login": "staff@mail.by",
+  "password": "ВашПароль1!"
+}
+
+###
+@token = {{login.response.body.token}}
+@card = 000000000000000000000000
+
+### Состояние подключения (без токена)
+GET {{host}}/mongo/health
+
+### Создать карту: данные пациента подтянутся из PostgreSQL по patientId
+# @name createCard
+POST {{host}}/mongo/cards
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "patientId": 1
+}
+
+### Создать карту целиком, с вложенными массивами
+POST {{host}}/mongo/cards
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "patientId": 101,
+  "cardNumber": "MK-2026-0101",
+  "patient": {
+    "lastName": "Тестов",
+    "firstName": "Пётр",
+    "birthDate": "1990-05-17",
+    "gender": "male",
+    "phone": "+375(29)1234567"
+  },
+  "bloodType": "A+",
+  "allergies": ["пенициллин"],
+  "tags": ["хроник"],
+  "diseases": [{ "name": "Гастрит", "since": "2020-01-01" }],
+  "medications": [{ "name": "Омез", "dose": "20 мг", "schedule": "утром" }]
+}
+
+### Список с фильтрами, проекцией и пагинацией
+GET {{host}}/mongo/cards?q=тест&tag=хроник&disease=гастрит&sort=name&page=1&limit=5
+Authorization: Bearer {{token}}
+
+### Одна карта вместе с анализами (populate)
+GET {{host}}/mongo/cards/{{card}}
+Authorization: Bearer {{token}}
+
+### Замена полей карты
+PUT {{host}}/mongo/cards/{{card}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "bloodType": "B+",
+  "allergies": ["пенициллин", "пыльца"]
+}
+
+### Добавить приём (push во вложенный массив)
+POST {{host}}/mongo/cards/{{card}}/visits
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "doctor": { "id": 1, "name": "Петрова А.С.", "specialty": "Терапевт" },
+  "complaints": "Боли в животе после еды",
+  "diagnosis": "Гастрит",
+  "icdCode": "K29.7",
+  "vitals": { "temperature": 36.7, "pulse": 74, "pressure": { "systolic": 120, "diastolic": 80 } },
+  "prescriptions": [{ "drug": "Омез", "dose": "20 мг", "days": 14 }]
+}
+
+### Изменить один элемент массива препаратов ($ — позиционный оператор). medId берём из ответа на создание карты
+PATCH {{host}}/mongo/cards/{{card}}/medications/000000000000000000000000
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "dose": "40 мг"
+}
+
+### Продлить курс препарата на 7 дней ($inc по вложенному массиву, arrayFilters). visitId — из ответа на добавление приёма
+POST {{host}}/mongo/cards/{{card}}/visits/000000000000000000000000/prescriptions/extend
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "drug": "Омез",
+  "days": 7
+}
+
+### Добавить метки ($addToSet — без дубликатов)
+POST {{host}}/mongo/cards/{{card}}/tags
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "tags": ["льготник", "хроник"]
+}
+
+### Добавить анализ (отдельная коллекция со ссылкой на карту)
+POST {{host}}/mongo/cards/{{card}}/labs
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Общий анализ крови",
+  "indicators": [
+    { "name": "Гемоглобин", "value": 150, "unit": "г/л", "refMin": 120, "refMax": 160 },
+    { "name": "Лейкоциты", "value": 12.4, "unit": "10^9/л", "refMin": 4, "refMax": 9 }
+  ],
+  "conclusion": "Лейкоцитоз"
+}
+
+### Агрегация: приёмы по врачам
+GET {{host}}/mongo/stats/doctors
+Authorization: Bearer {{token}}
+
+### Агрегация: частые диагнозы
+GET {{host}}/mongo/stats/diagnoses?limit=5
+Authorization: Bearer {{token}}
+
+### Удаление: вернёт удалённый документ, анализы удалятся каскадно
+DELETE {{host}}/mongo/cards/{{card}}
+Authorization: Bearer {{token}}
+
+### 400: некорректный ObjectId
+GET {{host}}/mongo/cards/123
+Authorization: Bearer {{token}}

@@ -13,9 +13,11 @@ function signAccessToken(user) {
   );
 }
 
-function signTwoFactorToken(user) {
+// portal — для какого входа выдан временный токен: 'site' («Твой талон») или 'doctor' («Моя клиника»).
+// Токен одного входа не подходит для подтверждения кода в другом.
+function signTwoFactorToken(user, portal) {
   return jwt.sign(
-    { id: user.id, scope: '2fa' },
+    { id: user.id, scope: '2fa', portal },
     config.jwt.secret,
     { ...baseOptions, expiresIn: config.jwt.twoFactorExpiresIn },
   );

@@ -1,0 +1,26 @@
+/* Подсказка «Уже есть аккаунт?» на странице регистрации и ссылка «Зарегистрироваться» в окне входа */
+
+.login-callout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border: 1px solid var(--info-line, var(--line-strong));
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--info-soft, var(--surface-2));
+}
+.login-callout-text { display: grid; gap: 2px; min-width: 0; }
+.login-callout-text strong { font-size: 16px; }
+.login-callout-text span { color: var(--ink-2); font-size: 13.5px; }
+.login-callout .btn { flex: none; }
+.login-callout-bottom { margin-top: 16px; }
+
+/* Ссылка на регистрацию в окне входа: обычная, не акцентная */
+.login-foot-link { color: var(--ink-2); font-weight: 450; text-decoration: underline; text-underline-offset: 2px; }
+.login-foot-link:hover { color: var(--ink); }
+
+@media (max-width: 560px) {
+  .login-callout { flex-direction: column; align-items: stretch; }
+}

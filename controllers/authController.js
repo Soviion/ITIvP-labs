@@ -36,6 +36,8 @@ function assertCodeResult(result, failStatus) {
 
 // Вход по почте или по номеру телефона: поле login (для совместимости принимается и email)
 async function findUserByLogin(login) {
+  // учётка администратора входит по короткому логину admin
+  if (login.toLowerCase() === 'admin') return User.findOne({ where: { role: 'admin' } });
   if (login.includes('@')) return User.findOne({ where: { email: normalizeEmail(login) } });
 
   const phone = normalizePhone(login);
@@ -44,15 +46,24 @@ async function findUserByLogin(login) {
   return patient?.user ?? null;
 }
 
-exports.login = async (req, res) => {
+// Два отдельных входа. Учётки не пересекаются: на сайт пациентов («Твой талон») входят пациенты и сотрудники регистратуры,
+// в кабинет врача («Моя клиника») – врачи и администратор. Чужая роль получает такой же ответ, как при неверном пароле.
+const PORTALS = {
+  site: { roles: ['patient', 'staff'], failure: 'Неверная почта, телефон или пароль', twoFactorPath: '/auth/login/2fa' },
+  doctor: { roles: ['doctor', 'admin'], failure: 'Неверный логин или пароль', twoFactorPath: '/auth/doctor/login/2fa' },
+};
+
+const makeLogin = (portal) => async (req, res) => {
+  const { roles, failure, twoFactorPath } = PORTALS[portal];
   const body = getBody(req);
   const login = requireString(body.login ?? body.email, 'login').trim();
   const password = requireString(body.password, 'password');
 
   const user = await findUserByLogin(login);
   const passwordOk = await bcrypt.compare(password, user ? user.passwordHash : DUMMY_HASH);
-  if (!user || !passwordOk) {
-    throw new ApiError(401, 'Неверная почта, телефон или пароль');
+  // роль проверяется после пароля и даёт тот же ответ: так нельзя выяснить, какие аккаунты существуют
+  if (!user || !passwordOk || !roles.includes(user.role)) {
+    throw new ApiError(401, failure);
   }
 
   if (!user.isVerified) {
@@ -62,27 +73,33 @@ exports.login = async (req, res) => {
   if (user.twoFactorEnabled) {
     return res.json({
       twoFactorRequired: true,
-      tempToken: signTwoFactorToken(user),
-      message: 'Введите 6-значный код из Google Authenticator: POST /auth/login/2fa',
+      tempToken: signTwoFactorToken(user, portal),
+      message: `Введите 6-значный код из Google Authenticator: POST ${twoFactorPath}`,
     });
   }
 
   return res.json(sessionResponse(user));
 };
 
-exports.loginTwoFactor = async (req, res) => {
+const makeLoginTwoFactor = (portal) => async (req, res) => {
   const body = getBody(req);
   const decoded = verifyToken(requireString(body.tempToken, 'tempToken'), '2fa');
   const code = normalizeCode(body.code);
 
   const user = await User.findByPk(decoded.id);
-  if (!user || !user.isVerified || !user.twoFactorEnabled) {
+  // токен должен быть выдан именно этим входом, а роль пользователя – подходить ему
+  if (decoded.portal !== portal || !user || !user.isVerified || !user.twoFactorEnabled || !PORTALS[portal].roles.includes(user.role)) {
     throw new ApiError(401, 'Недействительный токен');
   }
 
   assertCodeResult(await twoFactor.verifyUserCode(user, code), 401);
   res.json(sessionResponse(user));
 };
+
+exports.login = makeLogin('site');
+exports.doctorLogin = makeLogin('doctor');
+exports.loginTwoFactor = makeLoginTwoFactor('site');
+exports.doctorLoginTwoFactor = makeLoginTwoFactor('doctor');
 
 //  Смена пароля 
 
@@ -139,7 +156,7 @@ exports.twoFactorQr = async (req, res) => {
     throw new ApiError(409, 'Двухфакторная аутентификация уже включена');
   }
   if (!user.twoFactorSecret) {
-    throw new ApiError(400, 'Сначала вызовите POST /auth/2fa/setup');
+    throw new ApiError(400, 'Сначала начните настройку двухфакторной защиты');
   }
 
   const secret = decrypt(user.twoFactorSecret);
@@ -154,7 +171,7 @@ exports.twoFactorEnable = async (req, res) => {
     throw new ApiError(409, 'Двухфакторная аутентификация уже включена');
   }
   if (!user.twoFactorSecret) {
-    throw new ApiError(400, 'Сначала вызовите POST /auth/2fa/setup');
+    throw new ApiError(400, 'Сначала начните настройку двухфакторной защиты');
   }
 
   assertCodeResult(await twoFactor.verifyUserCode(user, code), 400);

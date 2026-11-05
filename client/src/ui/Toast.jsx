@@ -12,6 +12,7 @@ export function ToastProvider({ children }) {
   const dismiss = useCallback((id) => setToasts((list) => list.filter((toast) => toast.id !== id)), []);
 
   const push = useCallback((kind, message, { title, duration } = {}) => {
+    if (kind === 'error' && message === '') return; // нет связи с сервером: уведомление не нужно, показано окно «Нет связи»
     const id = ++seq;
     setToasts((list) => [...list.slice(-3), { id, kind, message, title }]);
     setTimeout(() => dismiss(id), duration ?? 3000);
