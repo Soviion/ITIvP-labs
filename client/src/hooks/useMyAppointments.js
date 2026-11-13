@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { cancelMyAppointment, clearMyArchive, deleteMyAppointment, fetchMyAppointments, getErrorMessage, isCanceled, updateMyAppointment } from '../api';
+import { useLiveRefresh } from '../realtime/hooks';
 import { useToast } from '../ui/toastContext';
 
 // Талоны пациента: загрузка, отмена и редактирование с оптимистичным обновлением (при ошибке всё возвращается).
@@ -29,6 +30,19 @@ export default function useMyAppointments({ enabled = true } = {}) {
     setError('');
     setReloadKey((key) => key + 1);
   }, []);
+
+  // Список обновляется сам, когда регистратура или врач меняют запись пациента (сервер присылает сигнал «обнови»).
+  // Без спиннера, а ошибку фонового запроса не показываем: пользователь ничего не просил, прежний список остаётся.
+  // Номер запроса защищает от «старого» ответа, пришедшего позже нового
+  const refreshSeq = useRef(0);
+  useLiveRefresh('appointments:changed', () => {
+    if (!enabled) return;
+    refreshSeq.current += 1;
+    const seq = refreshSeq.current;
+    fetchMyAppointments()
+      .then((data) => { if (seq === refreshSeq.current) { setItems(data); setStatus('ready'); setError(''); } })
+      .catch(() => { /* прежний список остаётся */ });
+  });
 
   const cancel = useCallback(async (item) => {
     setItems((list) => list.map((i) => (i.id === item.id ? { ...i, status: 'cancelled', pending: true } : i)));

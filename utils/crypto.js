@@ -3,7 +3,8 @@ const { twoFactor } = require('../config/auth');
 
 const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
 
-const randomToken = (bytes = 32) => crypto.randomBytes(bytes).toString('hex');
+// Пароль для демо-учёток: буквы разных регистров, цифра и спецсимвол, чтобы пройти правила пароля
+const randomPassword = () => `${crypto.randomBytes(9).toString('base64').replace(/[+/=]/g, 'x')}Aa1!`;
 
 const getKey = () => Buffer.from(twoFactor.encryptionKey, 'hex');
 
@@ -21,4 +22,4 @@ function decrypt(payload) {
   return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString('utf8');
 }
 
-module.exports = { sha256, randomToken, encrypt, decrypt };
+module.exports = { sha256, randomPassword, encrypt, decrypt };

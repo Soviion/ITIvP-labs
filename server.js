@@ -24,6 +24,12 @@ const appointmentsRouter = require('./routes/appointments');
 const patientsRouter = require('./routes/patients');
 const doctorsRouter = require('./routes/doctors');
 const specialtiesRouter = require('./routes/specialties');
+const chatRouter = require('./routes/chat');
+const assistantRouter = require('./routes/assistant');
+const aiConfig = require('./config/ai');
+const { attachRealtime } = require('./realtime');
+const { connectRedis, onRedisReady } = require('./config/redis');
+const { reconcile: restoreDeliveryQueue } = require('./services/deliveryQueue');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -39,6 +45,9 @@ app.use(cors({
   exposedHeaders: ['Retry-After', 'RateLimit', 'Content-Disposition'],
   maxAge: 600,
 }));
+
+// За туннелем или прокси (Cloudflare, nginx) лимиты по IP должны видеть настоящий адрес посетителя: TRUST_PROXY=1 в .env
+if (process.env.TRUST_PROXY) app.set('trust proxy', /^\d+$/.test(process.env.TRUST_PROXY) ? Number(process.env.TRUST_PROXY) : process.env.TRUST_PROXY);
 
 app.use(express.json());
 
@@ -68,6 +77,12 @@ app.use('/patients', auth, requireRole('staff'), patientsRouter);
 // Врачи и специальности: чтение открыто, изменение врачей закрыто внутри routes/doctors.js
 app.use('/doctors', doctorsRouter);
 app.use('/specialties', specialtiesRouter);
+
+// Вопросы врачу (REST: список, история, счётчик). Сами сообщения идут по WebSocket, см. realtime/
+app.use('/chat', auth, chatRouter);
+
+// ИИ-помощник для пациентов (чат без входа); подсказка врачу находится в /doctor/assistant/hint
+app.use('/assistant', assistantRouter);
 
 app.use(notFound);
 app.use(errorHandler);
@@ -104,10 +119,21 @@ async function start() {
     process.exit(1);
   }
 
-  await ensureAdmin(); // логин admin, пароль admin, если администратора ещё нет
+  await ensureAdmin(); // учётка администратора из ADMIN_EMAIL и ADMIN_PASSWORD (.env), если администратора ещё нет
+  const aiMissing = aiConfig.missing();
+  if (aiMissing.length) console.warn(`ИИ-помощник: в .env не хватает ${aiMissing.join(', ')}`);
+  const aiProvider = aiConfig.getProvider();
+  console.log(`ИИ-помощник (чат пациентов и подсказка врачу): ${aiProvider ? `${aiProvider.name} (${aiProvider.model})` : 'не настроен, чат отвечает справочными ответами, подсказка врачу недоступна'}`);
   await connectMongo(); // необязательно: без MONGO_URI или при ошибке подключения сервер всё равно запускается
 
-  app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+  // Redis (REDIS_URI) — очередь доставки сообщений офлайн-адресату; тоже необязательный. При каждом (пере)подключении
+  // очередь пересобирается из MongoDB, чтобы после простоя Redis ни одно сообщение не осталось «в пути»
+  onRedisReady(restoreDeliveryQueue);
+  connectRedis();
+
+  // Socket.IO живёт на том же HTTP-сервере и порту, что и REST
+  const server = app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+  attachRealtime(server);
 }
 
 start();

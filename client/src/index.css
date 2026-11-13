@@ -470,7 +470,8 @@ dialog.modal-drawer { inset: 0 0 0 auto; margin: 0; width: min(480px, 100vw); he
 .info-list > div { display: grid; grid-template-columns: 200px 1fr; gap: 12px; padding: 11px 14px; border-bottom: 1px solid var(--line); align-items: center; }
 .info-list > div:last-child { border-bottom: 0; }
 .info-list dt { color: var(--ink-3); }
-.info-list dd { margin: 0; font-weight: 600; word-break: break-all; }
+.info-list dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; } /* длинная почта переносится, обычные слова не рвутся по буквам */
+.modal-dialog .info-list > div { grid-template-columns: minmax(70px, 120px) minmax(0, 1fr); } /* в узком окне подтверждения подписи не отнимают место у значения */
 
 /* ============ Ввод кода (Google Authenticator) ============ */
 .otp { display: flex; gap: 8px; }

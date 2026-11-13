@@ -4,8 +4,8 @@ const { smtp } = require('../config/auth');
 let transporter;
 
 function getTransporter() {
-  if (!smtp.user || !smtp.pass) {
-    throw new Error('SMTP не настроен: задайте SMTP_USER и SMTP_PASS в .env');
+  if (!smtp.host || !smtp.user || !smtp.pass) {
+    throw new Error('SMTP не настроен: задайте SMTP_HOST, SMTP_USER и SMTP_PASS в .env');
   }
   if (!transporter) {
     transporter = nodemailer.createTransport({

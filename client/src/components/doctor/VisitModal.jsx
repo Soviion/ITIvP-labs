@@ -6,6 +6,7 @@ import Button from '../../ui/Button';
 import Field from '../../ui/Field';
 import Icon from '../../ui/Icon';
 import Modal from '../../ui/Modal';
+import HintPanel from './HintPanel';
 
 const ICD_RE = /^[A-Za-z]\d{2}(\.\d{1,2})?$/;
 const emptyDrug = () => ({ drug: '', dose: '', days: '7' });
@@ -36,6 +37,8 @@ export default function VisitModal({ open, onClose, patientId, appointments, onS
     setValues((prev) => ({ ...prev, [name]: event.target.value }));
     setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
+  // подсказка помощника дописывается к уже введённому тексту, ничего не затирая
+  const appendText = (name, text) => setValues((prev) => ({ ...prev, [name]: prev[name].trim() ? `${prev[name].trimEnd()}\n${text}` : text }));
   const setDrug = (index, name, value) => setDrugs((prev) => prev.map((item, i) => (i === index ? { ...item, [name]: value } : item)));
 
   async function submit(event) {
@@ -143,6 +146,25 @@ export default function VisitModal({ open, onClose, patientId, appointments, onS
         <Field label="Лечение" optional>
           {(props) => <textarea {...props} rows={2} value={values.treatment} onChange={setValue('treatment')} />}
         </Field>
+
+        <HintPanel
+          patientId={patientId}
+          form={{
+            complaints: values.complaints,
+            examination: values.examination,
+            diagnosis: values.diagnosis,
+            icdCode: values.icdCode,
+            vitals: {
+              temperature: numberOrUndefined(values.temperature),
+              pulse: numberOrUndefined(values.pulse),
+              pressure: values.systolic || values.diastolic
+                ? { systolic: numberOrUndefined(values.systolic), diastolic: numberOrUndefined(values.diastolic) }
+                : undefined,
+            },
+          }}
+          onInsertTreatment={(lines) => appendText('treatment', lines.map((line) => `– ${line}`).join('\n'))}
+          onInsertRecommendations={(text) => appendText('recommendations', text)}
+        />
 
         <fieldset className="dr-drugs">
           <legend>Назначения</legend>

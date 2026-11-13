@@ -7,6 +7,7 @@ import SiteLayout from './components/SiteLayout';
 import AppointmentsPage from './pages/AppointmentsPage';
 import CabinetCardPage from './pages/CabinetCardPage';
 import CabinetHistoryPage from './pages/CabinetHistoryPage';
+import CabinetQuestionsPage from './pages/CabinetQuestionsPage';
 import CabinetTicketsPage from './pages/CabinetTicketsPage';
 import CabinetVisitPage from './pages/CabinetVisitPage';
 import ContactsPage from './pages/ContactsPage';
@@ -18,8 +19,10 @@ import DoctorAppointmentsPage from './pages/doctor/DoctorAppointmentsPage';
 import DoctorLoginPage from './pages/doctor/DoctorLoginPage';
 import DoctorPatientPage from './pages/doctor/DoctorPatientPage';
 import DoctorProfilePage from './pages/doctor/DoctorProfilePage';
+import DoctorQuestionsPage from './pages/doctor/DoctorQuestionsPage';
 import DoctorSettingsPage from './pages/doctor/DoctorSettingsPage';
 import RouteAnnouncer from './components/RouteAnnouncer';
+import { RealtimeProvider } from './realtime/RealtimeProvider';
 import Banner from './ui/Banner';
 import Spinner from './ui/Spinner';
 import { ToastProvider } from './ui/Toast';
@@ -56,12 +59,13 @@ function GuestOnly({ children }) {
 
 // Два отдельных входа с независимыми сессиями: сайт пациентов («Твой талон») и кабинет врача («Моя клиника»).
 // Токены хранятся по отдельности, поэтому вход на одном сайте не открывает другой.
+// RealtimeProvider — подключение Socket.IO этого портала (живые слоты и списки, чат, красные кружки)
 function SiteSession() {
-  return <AuthProvider portal="site"><Outlet /></AuthProvider>;
+  return <AuthProvider portal="site"><RealtimeProvider portal="site"><Outlet /></RealtimeProvider></AuthProvider>;
 }
 
 function DoctorSession() {
-  return <AuthProvider portal="doctor"><Outlet /></AuthProvider>;
+  return <AuthProvider portal="doctor"><RealtimeProvider portal="doctor"><Outlet /></RealtimeProvider></AuthProvider>;
 }
 
 // Кабинет врача открыт врачам и администратору: гостя отправляем на отдельный вход, остальным показываем «Нет доступа»
@@ -97,6 +101,7 @@ export default function App() {
             <Route path="doctor" element={<RequireDoctor><DoctorLayout /></RequireDoctor>}>
               <Route index element={<DoctorAppointmentsPage />} />
               <Route path="patients/:patientId" element={<DoctorPatientPage />} />
+              <Route path="questions" element={<DoctorQuestionsPage />} />
               <Route path="profile" element={<DoctorProfilePage />} />
               <Route path="settings" element={<DoctorSettingsPage />} />
             </Route>
@@ -117,6 +122,7 @@ export default function App() {
                 <Route path="tickets" element={<CabinetTicketsPage />} />
                 <Route path="history" element={<CabinetHistoryPage />} />
                 <Route path="history/:visitId" element={<CabinetVisitPage />} />
+                <Route path="questions" element={<CabinetQuestionsPage />} />
                 <Route path="settings" element={<SettingsPage />} />
               </Route>
 

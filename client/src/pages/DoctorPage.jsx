@@ -4,6 +4,7 @@ import { fetchDoctor, getErrorMessage, isCanceled } from '../api';
 import { profileFor, yearsWord } from '../data/doctorProfiles';
 import { fullName, shortName } from '../utils/appointments';
 import { readPendingSlot, updatePendingSlot } from '../utils/pendingSlot';
+import AskDoctorButton from '../components/questions/AskDoctorButton';
 import Banner from '../ui/Banner';
 import Button from '../ui/Button';
 import DoctorPhoto from '../ui/DoctorPhoto';
@@ -87,6 +88,7 @@ export default function DoctorPage() {
           </div>
           <div className="doctor-actions">
             <Button variant="primary" icon="calendar" onClick={chooseDoctor}>Записаться к врачу</Button>
+            <AskDoctorButton doctor={doctor} />
             <Link to="/" className="btn btn-secondary"><Icon name="arrowLeft" size={16} />Назад к записи</Link>
           </div>
         </div>

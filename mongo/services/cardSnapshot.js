@@ -1,7 +1,7 @@
 const { Patient, MedicalRecord } = require('../../models');
 const ApiError = require('../../utils/ApiError');
+const { splitList } = require('../../utils/text');
 
-const splitList = (text) => (text ? String(text).split(/[,;\n]+/).map((item) => item.trim()).filter(Boolean) : []);
 const orUndefined = (value) => (value === null || value === '' ? undefined : value);
 
 // Снимок данных пациента из PostgreSQL в виде документа MongoDB: всё, что пациент сам указал в профиле,
@@ -43,4 +43,4 @@ async function snapshotFromPostgres(patientId) {
   };
 }
 
-module.exports = { snapshotFromPostgres, splitList };
+module.exports = { snapshotFromPostgres };

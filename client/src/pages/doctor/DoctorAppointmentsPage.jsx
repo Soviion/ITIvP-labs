@@ -1,8 +1,9 @@
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getErrorMessage, isCanceled } from '../../api';
 import { useAuth } from '../../auth/context';
 import useDoctors from '../../hooks/useDoctors';
+import { useLiveRefresh } from '../../realtime/hooks';
 import { ageText, dotDate } from '../../components/doctor/format';
 import { PatientMark, StatusTag } from '../../components/doctor/PatientBadge';
 import { STATUSES } from '../../constants';
@@ -30,9 +31,11 @@ export default function DoctorAppointmentsPage() {
   const [query, setQuery] = useState('');
   const [state, setState] = useState({ phase: 'loading', data: [], today: '', tomorrow: '', mongoAvailable: true, error: '' });
   const [attempt, setAttempt] = useState(0);
+  const refreshSeq = useRef(0); // номер последнего запроса: «старый» ответ, пришедший позже нового, отбрасывается
 
   useEffect(() => {
     const controller = new AbortController();
+    refreshSeq.current += 1;
     setState((prev) => ({ ...prev, phase: 'loading', error: '' }));
     fetchDoctorAppointments(period, controller.signal, isAdmin ? doctorId : '')
       .then((result) => setState({ phase: 'ready', data: result.data, today: result.today, tomorrow: result.tomorrow, mongoAvailable: result.mongoAvailable, error: '' }))
@@ -44,6 +47,18 @@ export default function DoctorAppointmentsPage() {
   }, [period, attempt, isAdmin, doctorId]);
 
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
+
+  // Новая запись, отмена или перенос появляются в списке врача сами (сервер присылает сигнал «обнови»), без спиннера
+  useLiveRefresh('appointments:changed', () => {
+    refreshSeq.current += 1;
+    const seq = refreshSeq.current;
+    fetchDoctorAppointments(period, undefined, isAdmin ? doctorId : '')
+      .then((result) => {
+        if (seq !== refreshSeq.current) return;
+        setState({ phase: 'ready', data: result.data, today: result.today, tomorrow: result.tomorrow, mongoAvailable: result.mongoAvailable, error: '' });
+      })
+      .catch(() => { /* прежний список остаётся */ });
+  });
 
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase();

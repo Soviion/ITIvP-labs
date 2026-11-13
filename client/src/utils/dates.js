@@ -34,6 +34,3 @@ export function formatDayHeading(iso) {
 }
 
 export const formatShortDate = (iso) => (iso ? iso.split('-').reverse().join('.') : '');
-
-const dateTime = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
-export const formatDateTime = (value) => dateTime.format(new Date(value));

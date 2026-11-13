@@ -3,19 +3,41 @@ import { Link } from 'react-router-dom';
 import { fullName, shortName } from '../utils/appointments';
 import { formatDayHeading } from '../utils/dates';
 import { updatePendingSlot } from '../utils/pendingSlot';
+import useSlotHold from '../realtime/useSlotHold';
 import { doctorTitle, profileFor } from '../data/doctorProfiles';
 import Button from '../ui/Button';
 import DoctorPhoto from '../ui/DoctorPhoto';
 import Icon from '../ui/Icon';
 import Spinner from '../ui/Spinner';
 import SlotPicker from './SlotPicker';
+import { HoldInline } from './SlotHoldTimer';
 
 // Выбор врача, даты и времени. Работает без входа в систему: расписание открыто всем.
 // Выбор запоминается (sessionStorage): можно уйти в профиль врача или на регистрацию и вернуться с теми же данными.
 // onSubmit(selection, doctor) вызывается по кнопке «Записаться».
-export default function BookingPanel({ doctors, initial, mode, onSubmit, refreshKey = 0 }) {
+// Бронь: у вошедшего пациента выбранное время на 15 секунд закрепляется за ним (useSlotHold). onHoldChange получает состояние брони
+// (для окна подтверждения), onHoldLost вызывается, когда бронь закончилась сама (время вышло, отказ): выбор времени уже сброшен.
+// Смена clearTimeKey снимает выбор времени (пациент отказался от записи): бронь освобождается сразу.
+export default function BookingPanel({ doctors, initial, mode, onSubmit, refreshKey = 0, onHoldChange, onHoldLost, clearTimeKey = 0 }) {
   const [specialty, setSpecialty] = useState('all');
   const [selection, setSelection] = useState({ doctorId: initial?.doctorId ?? null, date: initial?.date ?? null, time: initial?.time ?? null });
+  const [seenClearKey, setSeenClearKey] = useState(clearTimeKey);
+  if (seenClearKey !== clearTimeKey) {
+    setSeenClearKey(clearTimeKey);
+    setSelection((prev) => ({ ...prev, time: null }));
+  }
+
+  const hold = useSlotHold({
+    doctorId: selection.doctorId,
+    date: selection.date,
+    time: selection.time,
+    enabled: mode === 'patient',
+    onLost: () => {
+      setSelection((prev) => ({ ...prev, time: null }));
+      onHoldLost?.();
+    },
+  });
+  useEffect(() => { onHoldChange?.(hold); }, [hold, onHoldChange]);
 
   useEffect(() => { updatePendingSlot(selection); }, [selection]);
 
@@ -74,6 +96,7 @@ export default function BookingPanel({ doctors, initial, mode, onSubmit, refresh
         value={selection}
         onChange={(change) => setSelection((prev) => ({ ...prev, ...change }))}
         refreshKey={refreshKey}
+        hold={hold}
       />
 
       {/* ---------- Итог ---------- */}
@@ -94,11 +117,14 @@ export default function BookingPanel({ doctors, initial, mode, onSubmit, refresh
             <span className="muted">Выберите врача, дату и время приёма</span>
           )}
         </div>
-        <div className="booking-actions">
-          {doctor && (
-            <Link to={`/doctors/${doctor.id}`} state={{ name: shortName(doctor) }} className="btn btn-secondary">Подробнее о враче</Link>
-          )}
-          <Button variant="primary" disabled={!ready || mode === 'staff' || mode === 'loading'} onClick={() => onSubmit(selection, doctor)}>Записаться</Button>
+        <div className="booking-controls">
+          {hold.status === 'holding' && <HoldInline hold={hold} />}
+          <div className="booking-actions">
+            {doctor && (
+              <Link to={`/doctors/${doctor.id}`} state={{ name: shortName(doctor) }} className="btn btn-secondary">Подробнее о враче</Link>
+            )}
+            <Button variant="primary" disabled={!ready || mode === 'staff' || mode === 'loading'} onClick={() => onSubmit(selection, doctor)}>Записаться</Button>
+          </div>
         </div>
       </footer>
     </section>

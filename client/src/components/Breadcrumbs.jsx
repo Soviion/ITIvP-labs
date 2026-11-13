@@ -11,6 +11,7 @@ const TRAILS = {
   '/cabinet/tickets': [HOME, CABINET, { label: 'Мои талоны' }],
   '/cabinet/history': [HOME, CABINET, { label: 'История болезни' }],
   '/cabinet/settings': [HOME, CABINET, { label: 'Настройки' }],
+  '/cabinet/questions': [HOME, CABINET, { label: 'Мои вопросы' }],
   '/staff': [HOME, { label: 'Регистратура' }],
   '/contacts': [HOME, { label: 'Контакты и FAQ' }],
 };

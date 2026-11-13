@@ -7,6 +7,7 @@ import './index.css'
 import './portal.css'
 import './a11y.css'
 import App from './App.jsx'
+import ChatWidget from './components/assistant/ChatWidget.jsx'
 import ConnectionLostDialog from './components/ConnectionLostDialog.jsx'
 import ScrollTopButton from './components/ScrollTopButton.jsx'
 import SkipLink from './components/SkipLink.jsx'
@@ -22,6 +23,7 @@ createRoot(document.getElementById('root')).render(
     <VisionBar />
     <App />
     <ScrollTopButton />
+    <ChatWidget />
     <ConnectionLostDialog />
   </StrictMode>,
 )

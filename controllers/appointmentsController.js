@@ -5,12 +5,29 @@ const ApiError = require('../utils/ApiError');
 const { fromDisplayDate, fromDisplayTime } = require('../utils/dates');
 const { ensureExists } = require('../utils/validators');
 const { getBody } = require('../utils/request');
+const { publishAppointmentChange } = require('../realtime/bus');
 
 const STATUSES = Appointment.getAttributes().status.values;
 
 const include = appointmentInclude();
 
 const order = [['date', 'ASC'], ['time', 'ASC'], ['id', 'ASC']];
+
+// Что именно сделала регистратура с записью: от этого зависит, какой тост увидит пациент
+function updateAction(row, before) {
+  const sameTime = (a, b) => String(a).slice(0, 5) === String(b).slice(0, 5);
+  const moved = before.doctorId !== row.doctorId || before.date !== row.date || !sameTime(before.time, row.time);
+  if (row.status === 'cancelled' && before.status !== 'cancelled') return 'cancelled';
+  if (moved) return 'rescheduled';
+  if (row.status === 'completed' && before.status !== 'completed') return 'completed';
+  return 'updated';
+}
+
+function announceChange(action, row, before) {
+  if (action === 'created') publishAppointmentChange('booked', 'staff', row);
+  else if (action === 'deleted') publishAppointmentChange('deleted', 'staff', row);
+  else publishAppointmentChange(updateAction(row, before), 'staff', row, before);
+}
 
 const crud = createCrudController({
   Model: Appointment,
@@ -23,6 +40,7 @@ const crud = createCrudController({
   required: ['patientId', 'doctorId', 'date', 'time'],
   include,
   order,
+  onChange: announceChange,
   async prepare(data) {
     if (data.date != null) data.date = fromDisplayDate(data.date);
     if (data.time != null) data.time = fromDisplayTime(data.time);

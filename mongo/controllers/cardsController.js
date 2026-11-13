@@ -1,14 +1,13 @@
 const mongoose = require('mongoose');
 const ApiError = require('../../utils/ApiError');
-const { getBody } = require('../../utils/request');
+const { getBody, pick } = require('../../utils/request');
+const { escapeRegExp } = require('../../utils/text');
 const MedicalCard = require('../models/MedicalCard');
 const LabResult = require('../models/LabResult');
 const { snapshotFromPostgres } = require('../services/cardSnapshot');
 const { mirror, syncRecordFromCard, syncRecordListChange, syncPatientFromCard, PROFILE_FIELDS } = require('../../services/cardSync');
 
 const CARD_FIELDS = ['patientId', 'cardNumber', 'patient', 'bloodType', 'heightCm', 'weightKg', 'anamnesis', 'allergies', 'tags', 'diseases', 'medications', 'visits'];
-const pick = (source, keys) => Object.fromEntries(keys.filter((key) => source[key] !== undefined).map((key) => [key, source[key]]));
-const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const notFound = (id) => new ApiError(404, `Карта с id=${id} не найдена`);
 const updateOptions = { new: true, runValidators: true }; 

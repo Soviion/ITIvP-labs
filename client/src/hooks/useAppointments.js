@@ -8,6 +8,7 @@ import {
   patchAppointment,
   updateAppointment,
 } from '../api';
+import { useLiveRefresh } from '../realtime/hooks';
 import { useToast } from '../ui/toastContext';
 
 export default function useAppointments() {
@@ -48,6 +49,17 @@ export default function useAppointments() {
     setError('');
     setReloadKey((key) => key + 1);
   }, []);
+
+  // Новая запись, отмена или перенос от пациента появляются в списке регистратуры сами (сервер присылает сигнал «обнови»).
+  // Без спиннера; при ошибке фонового запроса прежний список остаётся. Номер запроса отсекает «старый» ответ
+  const refreshSeq = useRef(0);
+  useLiveRefresh('appointments:changed', () => {
+    refreshSeq.current += 1;
+    const seq = refreshSeq.current;
+    fetchAppointments()
+      .then((data) => { if (seq === refreshSeq.current) { setItems(data); setStatus('ready'); setError(''); } })
+      .catch(() => { /* прежний список остаётся */ });
+  });
 
   const add = useCallback(async (draft, related) => {
     const tempId = Date.now();

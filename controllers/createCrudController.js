@@ -25,6 +25,9 @@ module.exports = function createCrudController({
   include = [],
   order = [['id', 'ASC']],
   prepare = async (data) => data,
+  // вызывается после успешного изменения: action — created | updated | deleted, before — значения до изменения.
+  // Нужен, чтобы сообщить об изменении другим частям системы (например, живым спискам), не усложняя сам контроллер
+  onChange = () => {},
 }) {
   const findOrFail = async (id) => {
     const row = await Model.findByPk(id, { include });
@@ -60,7 +63,9 @@ module.exports = function createCrudController({
       const data = await prepare(picked);
 
       const created = await Model.sequelize.transaction((transaction) => Model.create(data, { transaction }));
-      res.status(201).json(await findOrFail(created.id));
+      const row = await findOrFail(created.id);
+      onChange('created', row);
+      res.status(201).json(row);
     },
 
     update: async (req, res) => {
@@ -70,8 +75,11 @@ module.exports = function createCrudController({
       assertRequired(picked, required);
       const data = await prepare(withDefaults(picked));
 
+      const before = row.get({ plain: true });
       await row.update(data);
-      res.json(await findOrFail(id));
+      const fresh = await findOrFail(id);
+      onChange('updated', fresh, before);
+      res.json(fresh);
     },
 
     patch: async (req, res) => {
@@ -83,13 +91,17 @@ module.exports = function createCrudController({
       }
       const data = await prepare(picked);
 
+      const before = row.get({ plain: true });
       await row.update(data);
-      res.json(await findOrFail(id));
+      const fresh = await findOrFail(id);
+      onChange('updated', fresh, before);
+      res.json(fresh);
     },
 
     remove: async (req, res) => {
       const row = await findOrFail(parseId(req));
       await row.destroy();
+      onChange('deleted', row);
       res.json({ message: messages.deleted, [itemKey]: row });
     },
   };

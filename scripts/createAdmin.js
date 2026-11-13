@@ -1,16 +1,16 @@
 // Создаёт (или обновляет пароль) учётку администратора с доступом ко всему:  npm run admin:create
-// Вход: логин admin (или почта ниже), пароль по умолчанию admin. Для боевого сервера задайте свои значения:
-//   ADMIN_PASSWORD=... ADMIN_EMAIL=... npm run admin:create
+// Вход: логин admin. Почта и пароль берутся из .env (ADMIN_EMAIL, ADMIN_PASSWORD); чтобы сменить пароль, измените его в .env и запустите команду снова.
 require('dotenv').config({ quiet: true });
 
 const bcrypt = require('bcrypt');
 const { sequelize, User } = require('../models');
 const { bcryptRounds } = require('../config/auth');
 
-const email = (process.env.ADMIN_EMAIL || 'admin@talon.local').trim().toLowerCase();
-const password = process.env.ADMIN_PASSWORD || 'admin';
+const email = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+const password = process.env.ADMIN_PASSWORD || '';
 
 async function main() {
+  if (!email || !password) throw new Error('Задайте ADMIN_EMAIL и ADMIN_PASSWORD в .env');
   const passwordHash = await bcrypt.hash(password, bcryptRounds);
   const existing = await User.findOne({ where: { role: 'admin' } });
   if (existing) {
@@ -20,7 +20,6 @@ async function main() {
     await User.create({ email, passwordHash, role: 'admin', isVerified: true });
     console.log(`Администратор создан (почта ${email}). Логин для входа: admin`);
   }
-  if (password === 'admin') console.warn('Внимание: пароль «admin» подходит только для разработки. На сервере задайте ADMIN_PASSWORD.');
 }
 
 main()

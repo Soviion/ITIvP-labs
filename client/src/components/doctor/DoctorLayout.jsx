@@ -7,6 +7,9 @@ import Icon from '../../ui/Icon';
 import RetryBanner from '../../ui/RetryBanner';
 import VisionToggle from '../../vision/VisionToggle';
 import { useToast } from '../../ui/toastContext';
+import NotificationBadge from '../../ui/NotificationBadge';
+import { useUnread } from '../../realtime/hooks';
+import MessageNotifier from '../questions/MessageNotifier';
 import '../../doctor.css';
 
 export function ClinicMark({ size = 26 }) {
@@ -21,14 +24,17 @@ export function ClinicMark({ size = 26 }) {
 // Разделы кабинета: «Записи» подсвечивается и на странице пациента, потому что она открывается из списка записей
 const NAV = [
   { to: '/doctor', label: 'Записи', end: true, also: '/doctor/patients' },
+  // вопросы пациентов получает только сам врач (администратор в переписку не допускается), кружок — число бесед с непрочитанным
+  { to: '/doctor/questions', label: 'Вопросы', doctorOnly: true, badge: true },
   { to: '/doctor/profile', label: 'Профиль' },
   { to: '/doctor/settings', label: 'Настройки', adminOnly: true },
 ];
 
 // Оболочка кабинета врача: своя шапка («Моя клиника»), без навигации для пациентов
 export default function DoctorLayout() {
-  const { signOut, isAdmin } = useAuth();
+  const { signOut, isAdmin, isDoctor } = useAuth();
   const toast = useToast();
+  const unread = useUnread();
   const { pathname } = useLocation();
   const [doctor, setDoctor] = useState(null);
   const [problem, setProblem] = useState('');
@@ -45,6 +51,7 @@ export default function DoctorLayout() {
 
   return (
     <div className="dr-shell">
+      {isDoctor && <MessageNotifier side="doctor" />}
       <header className="dr-top">
         <div className="dr-top-inner">
           <Link to="/doctor" className="dr-brand" aria-label="Моя клиника — записи ко мне">
@@ -52,7 +59,7 @@ export default function DoctorLayout() {
             <span><strong>Моя клиника</strong><small>кабинет врача</small></span>
           </Link>
           <nav className="dr-nav" aria-label="Разделы кабинета">
-            {NAV.filter((item) => !item.adminOnly || isAdmin).map((item) => (
+            {NAV.filter((item) => (!item.adminOnly || isAdmin) && (!item.doctorOnly || isDoctor)).map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
@@ -60,6 +67,7 @@ export default function DoctorLayout() {
                 className={({ isActive }) => `dr-nav-link ${isActive || (item.also && pathname.startsWith(item.also)) ? 'is-active' : ''}`}
               >
                 {item.label}
+                {item.badge && <NotificationBadge count={unread.total} unit="непрочитанных бесед" />}
               </NavLink>
             ))}
           </nav>

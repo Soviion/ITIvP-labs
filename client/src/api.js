@@ -5,7 +5,7 @@ import { fromApiAppointment, toApiAppointment, toApiPatient } from './utils/appo
 import { apiToIsoDate, isoToApiDate } from './utils/dates';
 import { fromApiMe, toApiProfile } from './utils/patient';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 // Искусственная задержка для демонстрации спиннера и оптимистичного UI (VITE_API_DELAY_MS в .env)
 const FAKE_DELAY_MS = Number(import.meta.env.VITE_API_DELAY_MS) || 0;
 // Два независимых входа: сайт пациентов («Твой талон») и кабинет врача («Моя клиника»). У каждого свой токен и своя сессия:

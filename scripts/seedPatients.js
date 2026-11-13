@@ -8,7 +8,6 @@ require('dotenv').config({ quiet: true });
 
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const { Op } = require('sequelize');
 const {
@@ -38,12 +37,6 @@ const DEMO = [
 const REASONS = ['Консультация', 'Боли в спине', 'Контроль давления', 'Профилактический осмотр', 'Справка для работы', 'Кашель и температура', 'Повторный приём'];
 
 // ---------- помощники ----------
-function randomPassword() {
-  // буквы разных регистров, цифра и спецсимвол – чтобы пройти правила пароля
-  const base = crypto.randomBytes(9).toString('base64').replace(/[+/=]/g, 'x');
-  return `${base}Aa1!`;
-}
-
 const pad = (n) => String(n).padStart(2, '0');
 const iso = (date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 const isWeekday = (date) => date.getDay() >= 1 && date.getDay() <= 5;

@@ -3,12 +3,15 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { bookAppointment, getErrorMessage, getStatus } from '../api';
 import { useAuth } from '../auth/context';
 import BookingPanel from '../components/BookingPanel';
+import { HoldInline } from '../components/SlotHoldTimer';
 import HonorBoard from '../components/HonorBoard';
 import LoginPanel from '../components/LoginPanel';
+import MoodPoll from '../components/MoodPoll';
 import TicketCard from '../components/TicketCard';
 import useDoctors from '../hooks/useDoctors';
 import useMyAppointments from '../hooks/useMyAppointments';
 import { doctorTitle } from '../data/doctorProfiles';
+import { HOLD_IDLE } from '../realtime/useSlotHold';
 import { shortName } from '../utils/appointments';
 import { formatDayHeading } from '../utils/dates';
 import { clearPendingSlot, readPendingSlot, savePendingSlot } from '../utils/pendingSlot';
@@ -71,6 +74,8 @@ export default function HomePage() {
   const [booking, setBooking] = useState(false);
   const [bookingError, setBookingError] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [hold, setHold] = useState(HOLD_IDLE); // бронь выбранного времени (отсчёт показывает окно подтверждения)
+  const [clearTimeKey, setClearTimeKey] = useState(0); // растёт, когда пациент отказался от записи: выбор времени снимается, бронь освобождается
 
   // после входа возвращаем на страницу, которую пациент пытался открыть
   if (status === 'authed' && location.state?.from) return <Navigate to={location.state.from} replace />;
@@ -89,6 +94,13 @@ export default function HomePage() {
     setReason('');
     setBookingError('');
     setConfirm({ selection, doctor });
+  }
+
+  // «Отмена» или закрытие окна: пациент отказался от записи, значит время больше не нужно и бронь снимается сразу
+  function closeConfirm() {
+    if (booking) return;
+    setConfirm(null);
+    setClearTimeKey((key) => key + 1);
   }
 
   async function confirmBooking() {
@@ -122,24 +134,34 @@ export default function HomePage() {
       )}
 
       <div className="home">
-        <BookingPanel doctors={doctors} initial={pending} mode={mode} onSubmit={handleSubmit} refreshKey={refreshKey} />
+        <BookingPanel
+          doctors={doctors}
+          initial={pending}
+          mode={mode}
+          onSubmit={handleSubmit}
+          refreshKey={refreshKey}
+          onHoldChange={setHold}
+          onHoldLost={() => { if (!booking) setConfirm(null); }} // бронь истекла: окно подтверждения закрывается (выбор времени уже сброшен)
+          clearTimeKey={clearTimeKey}
+        />
         <aside className="side">
           {mode === 'guest' && <LoginPanel registeredEmail={location.state?.registered} />}
           {mode === 'patient' && <NextTicket mine={mine} />}
           {mode === 'staff' && <StaffCard />}
           {mode === 'loading' && <section className="card side-card"><div className="state-loading"><Spinner size={18} />Загружаем профиль…</div></section>}
+          <MoodPoll />
           <HonorBoard doctors={doctors} />
         </aside>
       </div>
 
       <Modal
         open={Boolean(confirm)}
-        onClose={() => !booking && setConfirm(null)}
+        onClose={closeConfirm}
         title="Подтвердите запись"
         size="sm"
         footer={(
           <>
-            <Button onClick={() => setConfirm(null)} disabled={booking}>Отмена</Button>
+            <Button onClick={closeConfirm} disabled={booking}>Отмена</Button>
             <Button variant="primary" loading={booking} onClick={confirmBooking}>Записаться</Button>
           </>
         )}
@@ -151,6 +173,7 @@ export default function HomePage() {
               <div><dt>Дата</dt><dd>{formatDayHeading(confirm.selection.date).text}</dd></div>
               <div><dt>Время</dt><dd>{confirm.selection.time}</dd></div>
             </dl>
+            {hold.status === 'holding' && <HoldInline hold={hold} />}
             {bookingError && <Banner kind="error">{bookingError}</Banner>}
             <Field label="Причина обращения" optional hint={`${reason.length} / 1000`}>
               {(props) => <textarea {...props} rows={3} maxLength={1000} value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Жалобы, цель визита" />}

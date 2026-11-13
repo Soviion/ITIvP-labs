@@ -1,12 +1,10 @@
 const { MedicalRecord } = require('../models');
+const { normalize, stripCode } = require('../utils/text');
 
 // Диагнозы и назначения врача попадают в медицинскую карту пациента: в его личном кабинете («Заболевания» и «Принимаемые препараты»)
 // и в личное дело в MongoDB. Повторы не добавляются, лимиты те же, что у списков, которые пациент ведёт сам.
 const MAX_ITEMS = 30;
 const MAX_LENGTH = 120;
-
-const normalize = (text) => String(text ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
-const stripCode = (text) => normalize(text).replace(/\s*\([a-z]\d{2}(\.\d{1,2})?\)$/i, '');
 
 // «Артериальная гипертензия (I10)»
 const diseaseText = (visit) => {

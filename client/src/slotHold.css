@@ -1,0 +1,40 @@
+/* ============ Бронь времени ============ */
+
+/* кнопка времени: на ней живёт полоса отсчёта, внутри значок замка */
+.slot { position: relative; display: flex; align-items: center; justify-content: center; gap: 5px; overflow: hidden; --hold-bar: #fff; --hold-bar-low: #ffd166; }
+.slot svg { flex: none; }
+
+/* талон, который сейчас выбирает другой пациент: не «занят записью», а «придержан» (янтарный, без зачёркивания) */
+.slot.is-held:disabled { background: var(--warn-soft); border-color: var(--warn-line); color: var(--warn-ink); text-decoration: none; font-weight: 600; cursor: not-allowed; }
+
+.hold-bar { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--hold-bar); transition: width 0.25s linear; }
+.hold-bar.is-low { background: var(--hold-bar-low); }
+
+/* чип справа в заголовке шага «Выберите время» */
+.bstep > header .hold-chip, .picker-title-row .hold-chip { margin-left: auto; }
+.picker-title-row { display: flex; align-items: center; gap: 10px; }
+.hold-chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border: 1px solid var(--accent); border-radius: var(--radius); background: var(--accent-soft); color: var(--accent-strong); font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+.hold-chip b, .hold-inline b { display: inline-block; min-width: 3.2ch; font-variant-numeric: tabular-nums; }
+.hold-chip.is-low { border-color: var(--warn-line); background: var(--warn-soft); color: var(--warn-ink); }
+
+.hold-inline { display: inline-flex; align-items: center; gap: 6px; color: var(--accent-strong); font-size: 13.5px; font-weight: 600; }
+.hold-inline.is-low { color: var(--warn-ink); }
+.hold-inline svg { flex: none; }
+.modal .hold-inline { padding: 8px 12px; border: 1px solid var(--accent); border-radius: var(--radius); background: var(--accent-soft); }
+.modal .hold-inline.is-low { border-color: var(--warn-line); background: var(--warn-soft); }
+
+/* в нижней панели отсчёт стоит отдельной строкой над кнопками (ряд кнопок и сводка слева не меняются) */
+.booking-controls { display: grid; justify-items: end; gap: 8px; }
+@media (max-width: 640px) {
+  .booking-controls { width: 100%; justify-items: center; }
+}
+
+/* режим для слабовидящих: цвета берутся из выбранной схемы, рамки жёстче */
+html[data-vision] .slot { --hold-bar: var(--v-primary-ink); --hold-bar-low: var(--v-primary-ink); }
+html[data-vision] .slot.is-held:disabled { opacity: 1; text-decoration: none; border-style: dashed; border-width: 2px; border-color: var(--warn-line); background: var(--warn-soft); color: var(--warn-ink); }
+html[data-vision] .hold-bar { height: 5px; }
+html[data-vision] .hold-chip, html[data-vision] .modal .hold-inline { border-width: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hold-bar { transition: none; }
+}

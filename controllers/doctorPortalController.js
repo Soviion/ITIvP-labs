@@ -8,6 +8,7 @@ const MedicalCard = require('../mongo/models/MedicalCard');
 const { isConnected } = require('../config/mongo');
 const { snapshotFromPostgres } = require('../mongo/services/cardSnapshot');
 const sendDocx = require('../utils/sendDocx');
+const { publishAppointmentChange } = require('../realtime/bus');
 const { applyVisitToRecord, applyVisitToCard } = require('../services/visitRecordSync');
 const { mirror, syncRecordFromCard, syncPatientFromCard } = require('../services/cardSync');
 const { buildMedicalCardDocx } = require('../services/documents/medicalCardDocx');
@@ -50,6 +51,9 @@ async function assertOwnPatient(doctor, patientId) {
   const count = doctor.id ? await Appointment.count({ where: { doctorId: doctor.id, patientId } }) : 0;
   if (!count) throw new ApiError(403, 'Этот пациент не записан к вам на приём');
 }
+
+// Доступ врача к пациенту по номеру из тела запроса (используется подсказкой ИИ): тот же запрет, что и у остальных маршрутов
+exports.assertPatientAccess = (req, patientId) => assertOwnPatient(req.doctor, patientId);
 
 const patientIdOf = (req) => {
   const id = Number(req.params.patientId);
@@ -290,7 +294,10 @@ exports.addVisit = async (req, res) => {
   } catch (err) {
     console.error(`Не удалось перенести диагноз и назначения в карту пациента: ${err.message}`);
   }
-  if (appointment && appointment.status === 'scheduled') await appointment.update({ status: 'completed' });
+  if (appointment && appointment.status === 'scheduled') {
+    await appointment.update({ status: 'completed' });
+    publishAppointmentChange('completed', 'doctor', appointment); // пациенту и регистратуре статус обновится без перезагрузки
+  }
 
   res.status(201).json(cardJson(card));
 };

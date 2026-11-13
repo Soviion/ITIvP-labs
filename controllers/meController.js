@@ -14,6 +14,8 @@ const appointmentInclude = require('../services/appointmentInclude');
 const { processAvatar } = require('../services/avatarImage');
 const { mirror, syncCardFromRecord, refreshCardPatient } = require('../services/cardSync');
 const { jwt: jwtConfig } = require('../config/auth');
+const { publishAppointmentChange } = require('../realtime/bus');
+const slotHolds = require('../services/slotHolds');
 
 const BLOOD_TYPES = ['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'];
 const MAX_ACTIVE_APPOINTMENTS = 4; // больше активных талонов у одного пациента быть не может
@@ -198,6 +200,13 @@ const hasStarted = (appointment) => {
   return appointment.date < todayIso() || (appointment.date === todayIso() && toMinutes(appointment.time) <= nowMinutes);
 };
 
+// Талон, который сейчас выбирает другой пациент (бронь на 15 секунд), занять нельзя даже прямым запросом в обход страницы
+function assertNotHeldByOther(req, doctorId, date, time) {
+  if (slotHolds.isHeldByOther({ doctorId, date, time, userId: req.user.id })) {
+    throw new ApiError(409, 'Этот талон сейчас выбирает другой пациент. Подождите немного или выберите другое время');
+  }
+}
+
 const countActive = (patientId) => Appointment.count({
   where: { patientId, status: { [Op.ne]: 'cancelled' }, date: { [Op.gte]: todayIso() } },
 });
@@ -237,6 +246,7 @@ exports.book = async (req, res) => {
   const busy = await loadBusy(Appointment, doctor.id, [date]);
   const slot = slotsFor(date, busy.get(date)).find((item) => item.time === time);
   if (!slot?.free) throw new ApiError(409, 'Этот талон уже занят. Выберите другое время');
+  assertNotHeldByOther(req, doctor.id, date, time);
 
   // пациент не может быть на двух приёмах одновременно
   const mine = await Appointment.findAll({ where: { patientId: patient.id, date, status: { [Op.ne]: 'cancelled' } }, raw: true });
@@ -248,6 +258,7 @@ exports.book = async (req, res) => {
   const created = await Appointment.create({
     patientId: patient.id, doctorId: doctor.id, date, time, durationMinutes: SLOT_MINUTES, reason: reason || null, status: 'scheduled',
   });
+  publishAppointmentChange('booked', 'patient', created); // талон стал занят у всех, кто смотрит расписание; врач и регистратура видят новую запись
   res.status(201).json(await findOwn(patient.id, created.id));
 };
 
@@ -259,6 +270,7 @@ exports.cancel = async (req, res) => {
 
   if (hasStarted(appointment)) throw new ApiError(409, 'Приём уже начался или прошёл, отменить его нельзя');
   await appointment.update({ status: 'cancelled' });
+  publishAppointmentChange('cancelled', 'patient', appointment); // талон освободился
   res.json(await findOwn(patient.id, appointment.id));
 };
 
@@ -309,6 +321,7 @@ exports.updateAppointment = async (req, res) => {
       const busy = await loadBusy(Appointment, appointment.doctorId, [date], appointment.id);
       const slot = slotsFor(date, busy.get(date)).find((item) => item.time === time);
       if (!slot?.free) throw new ApiError(409, 'Этот талон уже занят. Выберите другое время');
+      assertNotHeldByOther(req, appointment.doctorId, date, time);
 
       const mine = await Appointment.findAll({
         where: { patientId: patient.id, date, status: { [Op.ne]: 'cancelled' }, id: { [Op.ne]: appointment.id } },
@@ -324,7 +337,10 @@ exports.updateAppointment = async (req, res) => {
   }
   if (!Object.keys(changes).length) throw new ApiError(400, 'Нет изменений для сохранения');
 
+  // где запись была до переноса: освободившийся талон тоже надо показать как свободный
+  const previous = { doctorId: appointment.doctorId, date: appointment.date, time: appointment.time };
   await appointment.update(changes);
+  publishAppointmentChange(changes.date || changes.time ? 'rescheduled' : 'updated', 'patient', appointment, previous);
   res.json(await findOwn(patient.id, appointment.id));
 };
 

@@ -1,6 +1,7 @@
 const { MedicalRecord, Patient } = require('../models');
 const MedicalCard = require('../mongo/models/MedicalCard');
 const { isConnected } = require('../config/mongo');
+const { normalize, CODE_TAIL, stripCode } = require('../utils/text');
 
 // Медицинская карта живёт в двух базах: личное дело врача в MongoDB и карта пациента в PostgreSQL (кабинет пациента).
 // Общие данные (группа крови, рост, вес, аллергии, заболевания, препараты, часть профиля) при любом изменении
@@ -10,9 +11,6 @@ const { isConnected } = require('../config/mongo');
 const MAX_ITEMS = 30;
 const MAX_LENGTH = 120;
 
-const normalize = (text) => String(text ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
-const CODE_TAIL = /\s*\(([A-Za-z]\d{2}(?:\.\d{1,2})?)\)$/;
-const stripCode = (text) => normalize(String(text ?? '').replace(CODE_TAIL, ''));
 const unique = (list) => list.filter((item, index) => item && list.findIndex((other) => normalize(other) === normalize(item)) === index);
 
 // Строка списка в кабинете пациента ↔ вложенный документ в личном деле

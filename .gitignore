@@ -5,8 +5,6 @@ node_modules/
 .env
 .env.local
 .env.*.local
-# .env клиента хранит только публичный адрес API (VITE_API_URL), секретов в нём нет — его коммитим
-!client/.env
 
 # Logs
 npm-debug.log*

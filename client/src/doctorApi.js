@@ -110,3 +110,9 @@ export const downloadReferralDocx = (patientId, referralId) => downloadDocx(
 export const grantDoctorAccess = (email) => api
   .post('/doctor/access', { email }, once)
   .then(({ data }) => data);
+
+// Подсказка по лечению: сервер отправляет в модель только обезличенные данные и возвращает варианты для врача.
+// Повторы отключены (запрос к модели нельзя дублировать), рассуждающая модель отвечает до двух минут.
+export const requestTreatmentHint = (payload, signal) => api
+  .post('/doctor/assistant/hint', payload, { signal, retry: false, timeout: 150_000 })
+  .then(({ data }) => data);

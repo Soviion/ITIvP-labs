@@ -183,13 +183,14 @@ GET {{host}}/unknown-route
 ########## MongoDB (лабораторная №6) ##########
 # Нужен вход сотрудником (роль staff). Подставьте свои почту и пароль.
 
+# Логин и пароль сотрудника берутся из .env (STAFF_EMAIL, STAFF_PASSWORD), в этом файле их нет
 ### @name login
 POST {{host}}/auth/login
 Content-Type: application/json
 
 {
-  "login": "staff@mail.by",
-  "password": "ВашПароль1!"
+  "login": "{{$dotenv STAFF_EMAIL}}",
+  "password": "{{$dotenv STAFF_PASSWORD}}"
 }
 
 ###

@@ -7,8 +7,7 @@ const mongoose = require('mongoose');
 const { sequelize, Patient, MedicalRecord, MedicalEntry, Doctor, Specialty, Appointment } = require('../models');
 const { connectMongo, isConnected } = require('../config/mongo');
 const MedicalCard = require('../mongo/models/MedicalCard');
-
-const splitList = (text) => (text ? String(text).split(/[,;\n]+/).map((item) => item.trim()).filter(Boolean) : []);
+const { splitList } = require('../utils/text');
 
 // Текст назначений «Омез 20 мг; Ингалипт» → массив назначений
 const toPrescriptions = (text) => splitList(text).map((drug) => ({ drug: drug.slice(0, 120) }));

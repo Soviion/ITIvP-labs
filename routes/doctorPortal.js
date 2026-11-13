@@ -4,6 +4,7 @@ const controller = require('../controllers/doctorPortalController');
 const ApiError = require('../utils/ApiError');
 const access = require('../controllers/doctorAccessController');
 const limiters = require('../middleware/rateLimit');
+const assistant = require('../controllers/assistantController');
 
 // Кабинет врача. Подключается в server.js после auth, requireRole('doctor') и middleware/doctor
 const router = express.Router();
@@ -13,6 +14,9 @@ router.param('referralId', (req, res, next, value) => (
 ));
 
 router.get('/me', controller.getMe);
+
+// Подсказка по лечению от ИИ: только обезличенные данные, решение за врачом
+router.post('/assistant/hint', limiters.assistantDoctor, assistant.doctorHint);
 
 // Открыть доступ новому врачу: пароль создаётся на сервере и уходит письмом
 router.post('/access', limiters.mail, access.grantAccess);

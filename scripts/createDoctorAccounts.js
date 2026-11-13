@@ -7,19 +7,13 @@ require('dotenv').config({ quiet: true });
 
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const { sequelize, User, Doctor } = require('../models');
 const { bcryptRounds } = require('../config/auth');
 const { assertStrongPassword } = require('../utils/passwordPolicy');
+const { randomPassword } = require('../utils/crypto');
 
 const OUT_FILE = path.join(__dirname, '..', 'doctor-passwords.local.txt');
-
-function randomPassword() {
-  // буквы разных регистров, цифра и спецсимвол — чтобы пройти правила пароля
-  const base = crypto.randomBytes(9).toString('base64').replace(/[+/=]/g, 'x');
-  return `${base}Aa1!`;
-}
 
 async function main() {
   const arg = process.argv.find((item) => item.startsWith('--password='));

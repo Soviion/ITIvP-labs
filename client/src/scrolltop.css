@@ -2,7 +2,7 @@
 .scroll-top {
   position: fixed;
   right: 20px;
-  bottom: 20px;
+  bottom: 76px; /* выше кнопки помощника */
   z-index: 40;
   display: grid;
   place-items: center;
@@ -21,5 +21,7 @@
 }
 .scroll-top.is-visible { opacity: 0.85; visibility: visible; transform: none; }
 .scroll-top:hover { opacity: 1; color: var(--ink); border-color: var(--ink-3); }
-@media (max-width: 560px) { .scroll-top { right: 12px; bottom: 12px; } }
+@media (max-width: 560px) { .scroll-top { right: 12px; bottom: 68px; } }
+/* пока открыт чат помощника, кнопка «Наверх» не нужна: окно занимает этот угол */
+body.assistant-open .scroll-top { visibility: hidden; }
 @media print { .scroll-top { display: none !important; } }

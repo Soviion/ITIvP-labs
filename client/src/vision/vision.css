@@ -313,3 +313,13 @@ html[data-vision] .dr-table-wrap { overflow-x: auto; }
 html[data-vision] .dr-table { min-width: 760px; }
 html[data-vision] .dr-table td, html[data-vision] .dr-table th { overflow-wrap: normal; word-break: normal; }
 html[data-vision] .dr-person strong { overflow-wrap: normal; word-break: normal; }
+
+/* ---------- Вопросы врачу ---------- */
+html[data-vision] .notify-badge { border: 2px solid var(--line-strong); background: var(--danger); color: var(--v-on-danger); }
+html[data-vision] .qa-bubble { border-width: 2px; }
+html[data-vision] .qa-dot { border: 2px solid var(--line-strong); }
+html[data-vision] .qa-conv-list li + li { border-top: 2px solid var(--line-strong); }
+html[data-vision] .qa-conv { color: var(--ink); }
+html[data-vision] .qa-link { color: var(--accent); }
+html[data-vision] .qa-meta, html[data-vision] .qa-conv-sub, html[data-vision] .qa-conv-side { color: var(--ink-2); }
+html[data-vision] .qa-hint, html[data-vision] .qa-note { color: var(--ink); border-color: var(--line-strong); }

@@ -9,6 +9,10 @@ import RetryBanner from '../ui/RetryBanner';
 import VisionToggle from '../vision/VisionToggle';
 import { visionActions } from '../vision/vision';
 import { useToast } from '../ui/toastContext';
+import NotificationBadge from '../ui/NotificationBadge';
+import { useUnread } from '../realtime/hooks';
+import AppointmentToasts from './AppointmentToasts';
+import MessageNotifier from './questions/MessageNotifier';
 
 // Пункты выпадающего списка пользователя
 const PATIENT_ITEMS = [
@@ -83,12 +87,20 @@ function UserArea() {
 export default function SiteLayout() {
   const { status, isStaff } = useAuth();
   const { pathname } = useLocation();
+  const unread = useUnread();
 
   // страница не перезагружается, поэтому при переходе между разделами сами возвращаемся к началу
   useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
 
   return (
     <div className="shell">
+      {/* пациенту: тосты «регистратура отменила талон» и «врач ответил на ваш вопрос» (сами ничего не рисуют) */}
+      {status === 'authed' && !isStaff && (
+        <>
+          <AppointmentToasts />
+          <MessageNotifier side="patient" />
+        </>
+      )}
       <header className="topbar">
         <div className="topbar-inner">
           <NavLink to="/" className="brand" aria-label="Твой талон — на главную"><Logo /></NavLink>
@@ -98,6 +110,7 @@ export default function SiteLayout() {
               <>
                 <NavLink to="/cabinet/card"><Icon name="user" size={16} />Моя медицинская карта</NavLink>
                 <NavLink to="/cabinet/history"><Icon name="list" size={16} />Моя история болезни</NavLink>
+                <NavLink to="/cabinet/questions"><Icon name="message" size={16} />Мои вопросы<NotificationBadge count={unread.total} unit="непрочитанных бесед" /></NavLink>
               </>
             )}
             {isStaff && <NavLink to="/staff"><Icon name="list" size={16} />Регистратура</NavLink>}

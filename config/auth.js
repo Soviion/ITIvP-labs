@@ -37,7 +37,7 @@ module.exports = {
   },
 
   smtp: {
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    host: process.env.SMTP_HOST || '',
     port: smtpPort,
     secure: process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : smtpPort === 465,
     user: smtpUser,
