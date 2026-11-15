@@ -1,0 +1,27 @@
+# Что не должно попадать в образ backend (контекст сборки – корень репозитория)
+
+# секреты и локальные файлы с паролями: .env подключается к контейнеру при запуске (env_file), а не зашивается в образ
+.env
+.env.*
+*.local.txt
+
+# зависимости ставятся внутри образа (npm ci), своя папка с другой ОС и версиями не нужна
+node_modules
+npm-debug.log*
+
+# клиент собирается отдельным образом (client/Dockerfile)
+client
+
+# служебное
+.git
+.gitignore
+.claude
+.vscode
+.idea
+*.patch
+*.md
+requests.http
+Clinic API.postman_collection.json
+Dockerfile
+.dockerignore
+docker-compose*.yml

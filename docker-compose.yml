@@ -1,0 +1,64 @@
+# MedClinic: «Твой талон» (сайт пациентов) и «Моя клиника» (кабинет врача)
+#
+# В стеке два сервиса: backend (Node.js + Express + Socket.IO) и frontend (React, отдаёт nginx).
+# Базы данных (PostgreSQL, MongoDB, Redis) работают в своих контейнерах и в этот стек не входят: адреса в .env.
+# Наружу порты не публикуются: контейнеры подключены к внешней сети proxy, домен и HTTPS настраивает обратный прокси.
+#   medclinic-frontend:80   – сайт
+#   medclinic-backend:3000  – API и WebSocket (в обратном прокси у этого адреса включите поддержку WebSocket)
+#
+# Запуск на сервере (проект лежит в /opt/stacks/MedClinic, рядом файл .env):
+#   docker compose up -d --build
+# Запуск на своём компьютере: см. docker-compose.local.yml и раздел «Docker» в README.md.
+
+services:
+  medclinic-backend:
+    build:
+      context: ${MEDCLINIC_DIR:-/opt/stacks/MedClinic}
+      dockerfile: Dockerfile
+    container_name: medclinic-backend
+    restart: unless-stopped
+    env_file:
+      - ${MEDCLINIC_DIR:-/opt/stacks/MedClinic}/.env
+    environment:
+      TZ: Europe/Minsk
+      PORT: "3000"
+      # сервер стоит за обратным прокси: лимиты по IP должны видеть настоящий адрес посетителя
+      TRUST_PROXY: "1"
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks:
+      - proxy
+
+  medclinic-frontend:
+    build:
+      context: ${MEDCLINIC_DIR:-/opt/stacks/MedClinic}/client
+      dockerfile: Dockerfile
+    container_name: medclinic-frontend
+    restart: unless-stopped
+    # из .env контейнер берёт VITE_API_URL: адрес API для браузера (см. client/docker/40-app-config.sh)
+    env_file:
+      - ${MEDCLINIC_DIR:-/opt/stacks/MedClinic}/.env
+    environment:
+      TZ: Europe/Minsk
+    expose:
+      - "80"
+    depends_on:
+      medclinic-backend:
+        condition: service_healthy
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true

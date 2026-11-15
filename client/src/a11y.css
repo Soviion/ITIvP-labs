@@ -1,0 +1,41 @@
+/* ============================================================================
+   Доступность для клавиатуры и скринридеров (общие правила для обоих порталов)
+   ============================================================================ */
+
+/* Текст только для скринридера: на экране его не видно, но он есть в дереве доступности */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* «Перейти к основному содержимому»: первая ссылка на странице, появляется при фокусе с клавиатуры (Tab) */
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 1000;
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+.skip-link:focus {
+  transform: none;
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* Основное содержимое получает фокус программно (после «Перейти к содержимому» и после смены страницы),
+   рамка вокруг всей страницы не нужна */
+#main-content:focus { outline: none; }

@@ -1,0 +1,96 @@
+/* Опрос «Как ваше настроение сегодня?» в правой панели: компактная карточка, три смайла в строку.
+   Цвета берутся из токенов сайта (зелёный, янтарный, индиго), поэтому режим для слабовидящих перекрашивает их сам. */
+
+.mood { padding: 14px 16px 12px; gap: 10px; }
+.mood .mood-title { font-size: 15px; font-weight: 600; line-height: 1.25; }
+
+.mood-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
+.mood-row > li { display: grid; align-content: start; gap: 6px; min-width: 0; }
+
+/* у каждого настроения свой цвет: фон смайла, линия и тёмный оттенок для текста */
+.mood-happy { --m: var(--ok); --m-soft: var(--ok-soft); --m-ink: var(--ok-ink); }
+.mood-neutral { --m: var(--warn-mark); --m-soft: var(--warn-soft); --m-ink: var(--warn-ink); }
+.mood-sad { --m: var(--info); --m-soft: var(--info-soft); --m-ink: var(--info-ink); }
+
+.mood-btn {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  width: 100%;
+  padding: 7px 4px 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.12s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.mood-btn:hover:not(:disabled) { border-color: var(--m); background: var(--m-soft); transform: translateY(-1px); }
+.mood-btn:active:not(:disabled) { transform: scale(0.96); }
+.mood-btn:disabled { cursor: default; }
+.mood-btn.is-pending { border-color: var(--m); background: var(--m-soft); }
+
+/* выбранное настроение: рамка и фон его цвета, остальные тускнеют */
+.mood-btn.is-chosen { border-color: var(--m); background: var(--m-soft); box-shadow: inset 0 0 0 1px var(--m); }
+.mood-btn:disabled:not(.is-chosen):not(.is-pending) { opacity: 0.55; }
+
+.mood-face { width: 34px; height: 34px; overflow: visible; transition: transform 0.18s ease; }
+.mood-btn:hover:not(:disabled) .mood-face, .mood-btn.is-chosen .mood-face { transform: scale(1.08); }
+.mood-face-bg { fill: var(--m-soft); stroke: var(--m); stroke-width: 2; }
+.mood-btn:hover:not(:disabled) .mood-face-bg, .mood-btn.is-chosen .mood-face-bg { fill: var(--surface); }
+.mood-face-eye { fill: var(--m-ink); }
+.mood-face-line { fill: none; stroke: var(--m-ink); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+
+.mood-label { font-size: 12.5px; line-height: 1.2; color: var(--ink-2); }
+.mood-btn.is-chosen .mood-label { color: var(--ink); font-weight: 600; }
+
+/* статистика под смайлом: полоска и «42% · 5» */
+.mood-stat { display: grid; gap: 4px; text-align: center; animation: mood-in 0.3s ease both; }
+.mood-bar { height: 6px; border-radius: 99px; background: var(--neutral-soft); overflow: hidden; }
+.mood-bar > span {
+  display: block;
+  height: 100%;
+  width: var(--w, 0%);
+  border-radius: inherit;
+  background: var(--m);
+  transition: width 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+  animation: mood-grow 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.mood-pct { font-size: 12px; line-height: 1.2; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.mood-pct b { font-size: 13px; color: var(--ink); }
+
+.mood-foot { display: grid; gap: 2px; }
+.mood-foot p { margin: 0; }
+.mood-total { font-size: 13px; color: var(--ink-2); }
+.mood-total strong { color: var(--ink); font-weight: 600; }
+.mood-hint { font-size: 12.5px; color: var(--ink-3); border-radius: var(--radius); }
+.mood-hint.is-nudged { animation: mood-nudge 0.9s ease both; }
+.mood-thanks { font-size: 12px; color: var(--ink-3); }
+.mood-note { margin: 0; font-size: 12.5px; color: var(--danger-ink); }
+
+.mood-off { margin: 0; font-size: 13px; color: var(--ink-3); }
+.mood-retry { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; text-decoration: underline; cursor: pointer; }
+
+@keyframes mood-grow { from { width: 0; } }
+@keyframes mood-in { from { opacity: 0; transform: translateY(3px); } }
+@keyframes mood-nudge {
+  0%, 100% { background: transparent; transform: none; }
+  15% { background: var(--accent-soft); color: var(--accent-strong); transform: translateX(-3px); }
+  30% { transform: translateX(3px); }
+  45% { transform: translateX(-2px); }
+  60% { background: var(--accent-soft); color: var(--accent-strong); transform: none; }
+}
+
+/* версия для слабовидящих: чёткие рамки, без «тусклых» состояний (vision.css перекрывает токены цветов сам) */
+html[data-vision] .mood-btn { border-width: 2px; border-color: var(--line-strong); }
+html[data-vision] .mood-btn.is-chosen { box-shadow: inset 0 0 0 2px var(--m); }
+html[data-vision] .mood-btn:disabled:not(.is-chosen):not(.is-pending) { opacity: 1; border-style: dashed; }
+html[data-vision] .mood-label, html[data-vision] .mood-pct, html[data-vision] .mood-hint, html[data-vision] .mood-thanks { color: var(--ink); }
+html[data-vision] .mood-bar { height: 10px; border: 1px solid var(--line-strong); }
+
+@media (prefers-reduced-motion: reduce) {
+  .mood-btn, .mood-face, .mood-bar > span { transition: none; }
+  .mood-stat, .mood-bar > span, .mood-hint.is-nudged { animation: none; }
+  .mood-hint.is-nudged { background: var(--accent-soft); }
+}

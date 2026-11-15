@@ -1,0 +1,86 @@
+/* ============================================================================
+   Вопросы врачу: красный кружок, список бесед, окно переписки.
+   Цвета только из переменных сайта, поэтому в версии для слабовидящих они подстраиваются сами
+   ============================================================================ */
+
+/* ---------- красный кружок с числом ---------- */
+.notify-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  margin-left: 6px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  vertical-align: middle;
+  animation: pop 0.2s ease-out;
+}
+
+/* ---------- список бесед ---------- */
+.qa-card { padding: 0; overflow: hidden; }
+.qa-conv-list { list-style: none; margin: 0; padding: 0; }
+.qa-conv-list li + li { border-top: 1px solid var(--line); }
+.qa-conv {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 14px 20px;
+  border: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.qa-conv:hover { background: var(--surface-2); }
+.qa-conv-main { display: grid; gap: 2px; min-width: 0; }
+.qa-conv-sub { color: var(--ink-3); font-size: 13px; }
+.qa-conv-last { max-width: 520px; overflow: hidden; color: var(--ink-2); text-overflow: ellipsis; white-space: nowrap; }
+.qa-conv.has-unread .qa-conv-last { color: var(--ink); font-weight: 600; }
+.qa-conv-side { display: flex; flex: none; align-items: center; gap: 8px; color: var(--ink-3); font-size: 13px; }
+
+/* ---------- окно переписки ---------- */
+.qa-body { display: flex; flex-direction: column; gap: 12px; background: var(--surface-2); }
+.qa-note { margin: 0; padding: 8px 24px; border-top: 1px solid var(--line); background: var(--surface); color: var(--ink-2); font-size: 13px; }
+.qa-hint { margin: 0; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--surface); color: var(--ink-2); font-size: 14px; }
+.qa-empty { margin: 8px 0; color: var(--ink-2); }
+
+.qa-list { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.qa-day { align-self: center; padding: 2px 10px; border-radius: 999px; background: var(--neutral-soft); color: var(--ink-2); font-size: 12px; font-weight: 600; }
+.qa-msg { display: flex; flex-direction: column; max-width: 88%; }
+.qa-msg-own { align-self: flex-end; align-items: flex-end; }
+.qa-msg-peer { align-self: flex-start; align-items: flex-start; }
+.qa-bubble {
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--ink);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.qa-msg-own .qa-bubble { border-color: var(--accent); background: var(--accent-soft); }
+.qa-meta { margin-top: 3px; color: var(--ink-3); font-size: 12px; text-align: right; }
+.qa-msg-peer .qa-meta { text-align: left; }
+.qa-status-failed { color: var(--danger); font-weight: 600; }
+.qa-status-read { color: var(--ok); }
+.qa-link { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
+
+/* «в сети»: точка плюс текст, цвет сам по себе ничего не сообщает */
+.qa-presence { display: inline-flex; align-items: center; gap: 6px; }
+.qa-dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--line-strong); }
+.qa-presence.is-online .qa-dot { background: var(--ok); }
+
+.qa-composer { align-items: flex-end; gap: 10px; }
+.qa-input { position: relative; flex: 1; min-width: 0; }
+.qa-input textarea { width: 100%; min-height: 44px; max-height: 140px; resize: none; }
+.qa-count { position: absolute; right: 8px; bottom: 4px; padding: 0 4px; background: var(--surface); color: var(--ink-3); font-size: 11px; }

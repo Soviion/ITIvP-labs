@@ -1,21 +1,14 @@
 const express = require('express');
-const router = express.Router();
-const {
-  getAllAppointments,
-  queryAppointments,
-  getAppointmentById,
-  createAppointment,
-  updateAppointment,
-  patchAppointment,
-  deleteAppointment,
-} = require('../controllers/appointmentsController');
+const controller = require('../controllers/appointmentsController');
 
-router.get('/', getAllAppointments);
-router.query('/', queryAppointments);
-router.get('/:id', getAppointmentById);
-router.post('/', createAppointment);
-router.put('/:id', updateAppointment);
-router.patch('/:id', patchAppointment);
-router.delete('/:id', deleteAppointment);
+const router = express.Router();
+
+router.get('/', controller.getAll);
+router.query('/', controller.query);
+router.get('/:id', controller.getById);
+router.post('/', controller.create);
+router.put('/:id', controller.update);
+router.patch('/:id', controller.patch);
+router.delete('/:id', controller.remove);
 
 module.exports = router;
