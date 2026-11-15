@@ -1,0 +1,20 @@
+# Дополнение для запуска на своём компьютере: открывает порты наружу, чтобы сайт был доступен на http://localhost.
+# На сервере этот файл не нужен: там трафик идёт через обратный прокси по сети proxy.
+#
+# Один раз создайте сеть (на сервере она уже есть):
+#   docker network create proxy
+# Запуск (в PowerShell переменная задаётся так: $env:MEDCLINIC_DIR = "."):
+#   MEDCLINIC_DIR=. docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
+# В .env должны быть VITE_API_URL=http://localhost:3000 и доступные с компьютера адреса баз данных.
+
+services:
+  medclinic-backend:
+    environment:
+      # сайт открывается на http://localhost (порт 80), а не на порту разработки 5173
+      CLIENT_ORIGIN: http://localhost
+    ports:
+      - "3000:3000"
+
+  medclinic-frontend:
+    ports:
+      - "80:80"

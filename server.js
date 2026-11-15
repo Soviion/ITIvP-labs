@@ -55,6 +55,10 @@ app.get('/', (req, res) => {
   res.json({ message: 'Clinic Management API' });
 });
 
+// «Жив ли сервер» для healthcheck в docker-compose.yml и обратного прокси. Без входа и без обращения к базам:
+// если процесс отвечает, он жив; состояние баз смотрите в /mongo/health и в логах
+app.get('/health', (req, res) => res.json({ status: 'ok', uptime: Math.round(process.uptime()) }));
+
 // Аутентификация и профиль
 app.use('/auth', authRouter);
 app.use('/profile', profileRouter);

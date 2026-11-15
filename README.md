@@ -266,6 +266,93 @@ npm run patients:reset                        # удалить демо-паци
 5. Опрос: в одном окне войдите пациентом и нажмите на смайл, в другом окне без входа цифры на карточке справа обновятся сами.
 6. Убедиться, что события идут по WebSocket: DevTools, вкладка Network, фильтр WS, соединение `socket.io`, кадры `hold:acquire`, `hold:changed`.
 
+## Docker (лабораторная работа №8, ветка `28`)
+
+Проект запускается двумя контейнерами. Базы данных (PostgreSQL, MongoDB, Redis) работают в своих контейнерах и в этот стек не входят: их адреса задаются в `.env`.
+
+| Сервис | Образ | Что внутри | Внутри сети |
+| --- | --- | --- | --- |
+| `medclinic-backend` | `Dockerfile` | Node.js 24, Express, Socket.IO | порт 3000 |
+| `medclinic-frontend` | `client/Dockerfile` | React, собранный Vite, и nginx (многоэтапная сборка) | порт 80 |
+
+### Файлы
+
+| Файл | Назначение |
+| --- | --- |
+| `Dockerfile` | образ backend: зависимости ставятся отдельным этапом (`npm ci --omit=dev`), процесс работает не от root |
+| `.dockerignore` | в образ не попадают `.env`, `node_modules`, клиент, файлы с паролями |
+| `client/Dockerfile` | образ frontend: этап сборки на Node, итоговый образ только nginx и готовые файлы |
+| `client/nginx.conf` | отдаёт сайт, любой неизвестный адрес ведёт на `index.html` (маршруты React), кэширует файлы сборки |
+| `client/docker/40-app-config.sh` | при старте контейнера создаёт `config.js` с адресом API из `VITE_API_URL`: домен меняется в `.env` без пересборки |
+| `client/src/config.js`, `client/public/config.js` | клиент читает адрес API из `config.js`, а при разработке из `VITE_API_URL` |
+| `docker-compose.yml` | два сервиса, внешняя сеть `proxy`, `env_file`, healthcheck |
+| `docker-compose.local.yml` | дополнение для запуска на своём компьютере: открывает порты 80 и 3000 |
+
+Для проверки сервера добавлен адрес `GET /health` (без входа и без обращения к базам), его опрашивает healthcheck.
+
+### Настройки в `.env`
+
+Для контейнеров нужны те же переменные, что и без Docker, плюс адреса сайта. Значения для сервера (домены ваши):
+
+| Переменная | Значение |
+| --- | --- |
+| `DATABASE_URL`, `MONGO_URI`, `REDIS_URI` | адреса баз, доступные из контейнера: опубликованный порт на хосте (`host.docker.internal`, этот адрес настроен в compose) или имя контейнера базы, если он в той же сети |
+| `VITE_API_URL` | адрес API, который открывает браузер, например `https://api.medclinic.example.com` |
+| `CLIENT_ORIGIN` | адрес сайта для CORS, например `https://medclinic.example.com` |
+| `APP_BASE_URL` | публичный адрес API (для ссылок в письмах) |
+
+`PORT=3000`, `TRUST_PROXY=1` и часовой пояс `Europe/Minsk` задаёт сам `docker-compose.yml`.
+
+### Первый запуск на сервере
+
+Проект лежит в `/opt/stacks/MedClinic`, рядом файл `.env`. Сеть `proxy` уже существует (к ней подключён обратный прокси).
+
+```
+cd /opt/stacks/MedClinic
+docker compose build
+docker compose run --rm --no-deps medclinic-backend npm run db:migrate
+docker compose up -d
+docker compose ps
+```
+
+Миграции выполняются до запуска стека: сервер при старте проверяет, что все миграции применены, и без этого не запускается, а frontend ждёт его готовности (`depends_on` с `service_healthy`). Обновление: `git pull`, `docker compose build`, миграции (если появились новые), `docker compose up -d`.
+
+В обратном прокси создайте два хоста (оба по сети `proxy`):
+
+| Домен | Куда | Особенности |
+| --- | --- | --- |
+| `medclinic.example.com` | `medclinic-frontend`, порт 80 | сайт |
+| `api.medclinic.example.com` | `medclinic-backend`, порт 3000 | включить поддержку WebSocket, иначе не работают бронь талона, чат и опрос |
+
+### Запуск на своём компьютере
+
+```
+docker network create proxy
+MEDCLINIC_DIR=. docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
+```
+
+В PowerShell переменная задаётся так: `$env:MEDCLINIC_DIR = "."`. В `.env` должен быть `VITE_API_URL=http://localhost:3000`. Сайт открывается на `http://localhost`, API на `http://localhost:3000`, список контейнеров: `docker ps`. Первый раз выполните миграции командой из предыдущего раздела (с тем же `MEDCLINIC_DIR=.` и двумя `-f`).
+
+### Какие дополнительные требования выполнены
+
+- переменные окружения и секреты в файле `.env` (`env_file`), в образы он не попадает;
+- healthcheck backend по адресу `/health` и запуск frontend после него (`service_healthy`);
+- внешняя сеть `proxy`: порты наружу не публикуются, доступ только через обратный прокси;
+- nginx отдаёт frontend и обслуживает маршруты React.
+
+### Если Docker Hub недоступен
+
+Базовые образы можно взять с зеркала, не меняя файлов: `docker compose build --build-arg NODE_IMAGE=mirror.gcr.io/library/node:24-alpine --build-arg NGINX_IMAGE=mirror.gcr.io/library/nginx:alpine`. Для постоянной работы добавьте зеркала в `/etc/docker/daemon.json` (`"registry-mirrors": ["https://mirror.gcr.io", "https://dockerhub.timeweb.cloud"]`) и перезапустите Docker.
+
+### Полезные команды
+
+```
+docker compose logs -f medclinic-backend     # журнал backend
+docker exec -it medclinic-backend sh         # оболочка внутри контейнера
+docker compose restart medclinic-backend     # перезапуск после правки .env
+docker inspect -f '{{.State.Health.Status}}' medclinic-backend
+```
+
 ## ИИ-помощники
 
 Оба помощника (чат для пациентов и подсказка врачу) работают через OpenRouter на одной модели (`config/ai.js`, `services/ai/`). Модель выбирается в `.env`, код менять не нужно. Запросы идут по интерфейсу OpenAI.

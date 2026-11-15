@@ -1,11 +1,12 @@
 import axios from 'axios';
+import { API_URL } from './config';
 import { connection } from './connection';
 import { humanizeError, humanizeFieldMessage } from './errors';
 import { fromApiAppointment, toApiAppointment, toApiPatient } from './utils/appointments';
 import { apiToIsoDate, isoToApiDate } from './utils/dates';
 import { fromApiMe, toApiProfile } from './utils/patient';
 
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+export { API_URL }; // адрес сервера задаётся в config.js; отсюда его по-прежнему берут остальные модули
 // Искусственная задержка для демонстрации спиннера и оптимистичного UI (VITE_API_DELAY_MS в .env)
 const FAKE_DELAY_MS = Number(import.meta.env.VITE_API_DELAY_MS) || 0;
 // Два независимых входа: сайт пациентов («Твой талон») и кабинет врача («Моя клиника»). У каждого свой токен и своя сессия:
